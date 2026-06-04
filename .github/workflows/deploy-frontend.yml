@@ -1,0 +1,42 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lunchef/frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: lunchef/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd lunchef/frontend && npm ci
+
+      - name: Create .env.production
+        run: |
+          echo "VITE_API_URL=${{ vars.VITE_API_URL }}" > lunchef/frontend/.env.production
+          echo "VITE_LIFF_ID=${{ vars.VITE_LIFF_ID }}" >> lunchef/frontend/.env.production
+
+      - name: Build
+        run: cd lunchef/frontend && npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: lunchef/frontend
+          command: pages deploy dist --project-name=lunchef-app
