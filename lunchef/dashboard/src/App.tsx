@@ -5,6 +5,8 @@ import OrderDetailPage from './pages/OrderDetailPage'
 import AdminLoginPage from './pages/AdminLoginPage'
 import AdminRestaurantsPage from './pages/AdminRestaurantsPage'
 import AdminRestaurantForm from './pages/AdminRestaurantForm'
+import AdminLocationsPage from './pages/AdminLocationsPage'
+import AdminOrdersPage from './pages/AdminOrdersPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { AdminAuthProvider } from './contexts/AdminAuthContext'
 
@@ -22,6 +24,8 @@ function App() {
               <Route path="/admin/restaurants" element={<AdminRestaurantsPage />} />
               <Route path="/admin/restaurants/new" element={<AdminRestaurantForm />} />
               <Route path="/admin/restaurants/:id/edit" element={<AdminRestaurantForm />} />
+              <Route path="/admin/locations" element={<AdminLocationsPage />} />
+              <Route path="/admin/orders" element={<AdminOrdersPage />} />
             </Routes>
           </div>
         </BrowserRouter>
