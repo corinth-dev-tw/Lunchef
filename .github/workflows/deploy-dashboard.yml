@@ -29,6 +29,9 @@ jobs:
         run: |
           echo "VITE_API_URL=${{ vars.VITE_API_URL }}" > lunchef/dashboard/.env.production
           echo "VITE_LIFF_ID=${{ vars.VITE_LIFF_ID }}" >> lunchef/dashboard/.env.production
+          if [ -n "${{ vars.VITE_DASHBOARD_LIFF_ID }}" ]; then
+            echo "VITE_DASHBOARD_LIFF_ID=${{ vars.VITE_DASHBOARD_LIFF_ID }}" >> lunchef/dashboard/.env.production
+          fi
 
       - name: Build
         run: cd lunchef/dashboard && npm run build
