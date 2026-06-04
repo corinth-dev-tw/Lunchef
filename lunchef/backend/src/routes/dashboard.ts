@@ -10,47 +10,6 @@ const app = new Hono<{
 
 const VALID_STATUSES = ['pending', 'confirmed', 'preparing', 'arrived', 'completed', 'cancelled'];
 
-interface DashboardLoginBody {
-  restaurant_id: number;
-  api_key: string;
-}
-
-// POST /api/dashboard/login — authenticate restaurant with api_key (legacy)
-app.post('/login', async (c) => {
-  try {
-    const body = await c.req.json<DashboardLoginBody>();
-    const { restaurant_id, api_key } = body;
-
-    if (!restaurant_id || !api_key) {
-      return c.json({ error: 'restaurant_id and api_key required' }, 400);
-    }
-
-    const restaurant = await c.env.DB.prepare(
-      'SELECT id, name, api_key FROM restaurants WHERE id = ? AND is_active = 1'
-    ).bind(restaurant_id).first<{ id: number; name: string; api_key: string | null }>();
-
-    if (!restaurant) {
-      return c.json({ error: 'Restaurant not found' }, 404);
-    }
-
-    if (!restaurant.api_key || restaurant.api_key !== api_key) {
-      return c.json({ error: 'Invalid credentials' }, 401);
-    }
-
-    const token = crypto.randomUUID();
-    await c.env.CACHE.put(
-      `dashboard_session:${token}`,
-      JSON.stringify({ restaurantId: restaurant.id }),
-      { expirationTtl: 86400 }
-    );
-
-    return c.json({ success: true, token, restaurant: { id: restaurant.id, name: restaurant.name } });
-  } catch (error) {
-    console.error('Dashboard login error:', error);
-    return c.json({ error: 'Login failed' }, 500);
-  }
-});
-
 // POST /api/dashboard/line-login — authenticate staff via LINE
 app.post('/line-login', async (c) => {
   try {

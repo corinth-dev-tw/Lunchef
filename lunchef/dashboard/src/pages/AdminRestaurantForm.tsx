@@ -100,8 +100,8 @@ export default function AdminRestaurantForm() {
         await adminApi.put(`/api/admin/restaurants/${id}`, form)
         setSuccess('Restaurant updated successfully')
       } else {
-        const data = await adminApi.post<{ id: number; api_key: string }>('/api/admin/restaurants', form)
-        setSuccess(`Restaurant created! API Key: ${data.api_key}`)
+        await adminApi.post<{ id: number }>('/api/admin/restaurants', form)
+        setSuccess('Restaurant created successfully')
         setTimeout(() => navigate('/admin/restaurants'), 1500)
       }
     } catch (err: any) {
