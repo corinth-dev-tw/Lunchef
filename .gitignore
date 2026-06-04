@@ -40,3 +40,4 @@ Thumbs.db
 # Misc
 *.pem
 .cache/
+setup-dns.sh
