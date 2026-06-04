@@ -1,0 +1,28 @@
+name = "lunchef-api"
+main = "src/index.ts"
+compatibility_date = "2024-06-04"
+
+[vars]
+ENVIRONMENT = "development"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lunchef-db"
+database_id = "your-database-id-here"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "1a8dc17b416348d5992b53a050b968d4"
+
+[env.production]
+name = "lunchef-api-prod"
+vars = { ENVIRONMENT = "production" }
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "lunchef-db-prod"
+database_id = "d790e747-77b0-4ce9-97e5-3ba6338b2ed0"
+
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "1a8dc17b416348d5992b53a050b968d4"
