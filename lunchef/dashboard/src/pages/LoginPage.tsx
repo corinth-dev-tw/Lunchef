@@ -2,72 +2,75 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../utils/api'
-
-interface Restaurant {
-  id: number
-  name: string
-}
+import liff from '@line/liff'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const { isLoggedIn, login } = useAuth()
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-  const [selectedRestaurant, setSelectedRestaurant] = useState('')
-  const [apiKey, setApiKey] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [liffReady, setLiffReady] = useState(false)
+  const [loggingIn, setLoggingIn] = useState(false)
 
   useEffect(() => {
     if (isLoggedIn) {
       navigate('/orders')
       return
     }
-    fetchRestaurants()
+
+    const liffId = import.meta.env.VITE_LIFF_ID || '2010266926-wB4JsxVI'
+
+    liff.init({ liffId, withLoginOnExternalBrowser: true })
+      .then(() => {
+        setLiffReady(true)
+
+        // Already logged in via LIFF? Exchange token
+        if (liff.isLoggedIn()) {
+          handleLiffLogin()
+        }
+      })
+      .catch((err) => {
+        console.error('LIFF init failed:', err)
+        setError('LINE SDK initialization failed')
+      })
   }, [isLoggedIn])
 
-  const fetchRestaurants = async () => {
-    try {
-      // Public endpoint to list available restaurants for login
-      const data = await api.get<Restaurant[]>('/api/restaurants')
-      setRestaurants(data)
-    } catch (err: any) {
-      console.error('Error fetching restaurants:', err)
-      setError('Failed to load restaurants')
-    }
-  }
-
-  const handleLogin = async () => {
-    const restaurantId = parseInt(selectedRestaurant)
-    if (!restaurantId || isNaN(restaurantId)) {
-      setError('Please select a restaurant')
-      return
-    }
-
-    if (!apiKey.trim()) {
-      setError('Please enter your API key')
-      return
-    }
-
-    setLoading(true)
+  const handleLiffLogin = async () => {
+    if (!liff.isLoggedIn()) return
+    setLoggingIn(true)
     setError('')
 
     try {
+      const accessToken = liff.getAccessToken()
+      if (!accessToken) {
+        throw new Error('No LINE access token')
+      }
+
       const data = await api.post<{
         success: boolean
         token: string
         restaurant: { id: number; name: string }
-      }>('/api/dashboard/login', {
-        restaurant_id: restaurantId,
-        api_key: apiKey.trim(),
-      })
+        staff?: { name: string; role: string }
+      }>('/api/dashboard/line-login', { access_token: accessToken })
 
       login(data.restaurant.id, data.token, data.restaurant.name)
       navigate('/orders')
     } catch (err: any) {
-      setError(err.message || 'Login failed')
+      console.error('LINE login error:', err)
+      setError(err.message || 'LINE login failed. Please make sure you have been added to restaurant staff.')
+      // Logout from LIFF so they can retry
+      liff.logout()
     } finally {
-      setLoading(false)
+      setLoggingIn(false)
     }
+  }
+
+  const handleLineLoginClick = async () => {
+    if (!liffReady) return
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: window.location.href })
+      return
+    }
+    await handleLiffLogin()
   }
 
   return (
@@ -79,46 +82,35 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Restaurant
-            </label>
-            <select
-              value={selectedRestaurant}
-              onChange={(e) => setSelectedRestaurant(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">Select a restaurant...</option>
-              {restaurants.map(r => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              API Key
-            </label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Enter your API key"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
+          <button
+            onClick={handleLineLoginClick}
+            disabled={!liffReady || loggingIn}
+            className="w-full flex items-center justify-center gap-2 bg-[#06C755] hover:bg-[#05b34d] text-white font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loggingIn ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                登入中...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21.5 11.5c0-4.15-4.47-7.5-10-7.5S1.5 7.35 1.5 11.5c0 3.72 3.33 6.83 7.82 7.42.3.06.8.19.92.44.1.2.07.52.03.73l-.13.77c-.04.22-.18.87.76.47.93-.4 5.02-2.96 7.11-5.06a9.23 9.23 0 001.49-1.87c.65-1.1.99-2.15.99-2.96z"/>
+                </svg>
+                使用 LINE 登入
+              </>
+            )}
+          </button>
 
           {error && (
-            <p className="text-red-600 text-sm">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-600 text-sm text-center">{error}</p>
+            </div>
           )}
 
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition disabled:opacity-50"
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
+          <p className="text-xs text-gray-500 text-center mt-4">
+            請確保您的 LINE 帳號已被管理員加入店家職員名單
+          </p>
         </div>
       </div>
     </div>

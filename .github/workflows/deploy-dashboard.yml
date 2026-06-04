@@ -28,6 +28,7 @@ jobs:
       - name: Create .env.production
         run: |
           echo "VITE_API_URL=${{ vars.VITE_API_URL }}" > lunchef/dashboard/.env.production
+          echo "VITE_LIFF_ID=${{ vars.VITE_LIFF_ID }}" >> lunchef/dashboard/.env.production
 
       - name: Build
         run: cd lunchef/dashboard && npm run build

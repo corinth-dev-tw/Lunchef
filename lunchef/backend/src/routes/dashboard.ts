@@ -15,7 +15,7 @@ interface DashboardLoginBody {
   api_key: string;
 }
 
-// POST /api/dashboard/login — authenticate restaurant with api_key
+// POST /api/dashboard/login — authenticate restaurant with api_key (legacy)
 app.post('/login', async (c) => {
   try {
     const body = await c.req.json<DashboardLoginBody>();
@@ -37,7 +37,6 @@ app.post('/login', async (c) => {
       return c.json({ error: 'Invalid credentials' }, 401);
     }
 
-    // Generate session token and store in KV (24 hour TTL)
     const token = crypto.randomUUID();
     await c.env.CACHE.put(
       `dashboard_session:${token}`,
@@ -45,16 +44,66 @@ app.post('/login', async (c) => {
       { expirationTtl: 86400 }
     );
 
+    return c.json({ success: true, token, restaurant: { id: restaurant.id, name: restaurant.name } });
+  } catch (error) {
+    console.error('Dashboard login error:', error);
+    return c.json({ error: 'Login failed' }, 500);
+  }
+});
+
+// POST /api/dashboard/line-login — authenticate staff via LINE
+app.post('/line-login', async (c) => {
+  try {
+    const { access_token } = await c.req.json<{ access_token?: string }>();
+
+    if (!access_token) {
+      return c.json({ error: 'access_token required' }, 400);
+    }
+
+    // Verify token with LINE Profile API
+    const profileRes = await fetch('https://api.line.me/v2/profile', {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+
+    if (!profileRes.ok) {
+      return c.json({ error: 'Invalid LINE token' }, 401);
+    }
+
+    const profile = (await profileRes.json()) as { userId: string; displayName: string };
+    const lineUserId = profile.userId;
+
+    // Find staff member
+    const staff = await c.env.DB.prepare(
+      `SELECT rs.*, r.name as restaurant_name
+       FROM restaurant_staff rs
+       JOIN restaurants r ON rs.restaurant_id = r.id
+       WHERE rs.line_user_id = ? AND rs.is_active = 1 AND r.is_active = 1`
+    ).bind(lineUserId).first<{
+      restaurant_id: number;
+      name: string;
+      role: string;
+      restaurant_name: string;
+    }>();
+
+    if (!staff) {
+      return c.json({ error: 'Your LINE account is not registered with any restaurant. Please contact your admin.' }, 403);
+    }
+
+    const token = crypto.randomUUID();
+    await c.env.CACHE.put(
+      `dashboard_session:${token}`,
+      JSON.stringify({ restaurantId: staff.restaurant_id, staffName: staff.name, role: staff.role }),
+      { expirationTtl: 86400 }
+    );
+
     return c.json({
       success: true,
       token,
-      restaurant: {
-        id: restaurant.id,
-        name: restaurant.name,
-      },
+      restaurant: { id: staff.restaurant_id, name: staff.restaurant_name },
+      staff: { name: staff.name, role: staff.role },
     });
   } catch (error) {
-    console.error('Dashboard login error:', error);
+    console.error('LINE dashboard login error:', error);
     return c.json({ error: 'Login failed' }, 500);
   }
 });

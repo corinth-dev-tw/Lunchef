@@ -16,6 +16,16 @@ interface Restaurant {
   location_ids: string | null
 }
 
+interface StaffMember {
+  id: number
+  restaurant_id: number
+  line_user_id: string
+  name: string
+  role: string
+  is_active: number
+  created_at: string
+}
+
 const CUISINE_LABELS: Record<string, string> = {
   thai: 'Thai', japanese: 'Japanese', korean: 'Korean',
   chinese: 'Chinese', italian: 'Italian', american: 'American',
@@ -29,6 +39,15 @@ export default function AdminRestaurantsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showKeyFor, setShowKeyFor] = useState<number | null>(null)
+
+  // Staff modal state
+  const [staffModalOpen, setStaffModalOpen] = useState(false)
+  const [staffModalRestaurant, setStaffModalRestaurant] = useState<Restaurant | null>(null)
+  const [staffList, setStaffList] = useState<StaffMember[]>([])
+  const [staffLoading, setStaffLoading] = useState(false)
+  const [newStaffName, setNewStaffName] = useState('')
+  const [newStaffLineId, setNewStaffLineId] = useState('')
+  const [newStaffRole, setNewStaffRole] = useState('staff')
 
   useEffect(() => {
     if (token) {
@@ -67,6 +86,55 @@ export default function AdminRestaurantsPage() {
       const data = await adminApi.post<{ api_key: string }>(`/api/admin/restaurants/${id}/regenerate-key`, {})
       setRestaurants(prev => prev.map(r => r.id === id ? { ...r, api_key: data.api_key } : r))
       setShowKeyFor(id)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const openStaffModal = async (restaurant: Restaurant) => {
+    setStaffModalRestaurant(restaurant)
+    setStaffModalOpen(true)
+    setStaffLoading(true)
+    setNewStaffName('')
+    setNewStaffLineId('')
+    setNewStaffRole('staff')
+    try {
+      const data = await adminApi.get<StaffMember[]>(`/api/admin/restaurants/${restaurant.id}/staff`)
+      setStaffList(data)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setStaffLoading(false)
+    }
+  }
+
+  const addStaff = async () => {
+    if (!staffModalRestaurant || !newStaffName.trim() || !newStaffLineId.trim()) return
+    try {
+      await adminApi.post(`/api/admin/restaurants/${staffModalRestaurant.id}/staff`, {
+        name: newStaffName.trim(),
+        line_user_id: newStaffLineId.trim(),
+        role: newStaffRole,
+      })
+      setNewStaffName('')
+      setNewStaffLineId('')
+      setNewStaffRole('staff')
+      // Refresh staff list
+      const data = await adminApi.get<StaffMember[]>(`/api/admin/restaurants/${staffModalRestaurant.id}/staff`)
+      setStaffList(data)
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const removeStaff = async (staffId: number) => {
+    if (!confirm('Remove this staff member?')) return
+    try {
+      await adminApi.delete(`/api/admin/staff/${staffId}`)
+      if (staffModalRestaurant) {
+        const data = await adminApi.get<StaffMember[]>(`/api/admin/restaurants/${staffModalRestaurant.id}/staff`)
+        setStaffList(data)
+      }
     } catch (err: any) {
       setError(err.message)
     }
@@ -170,6 +238,12 @@ export default function AdminRestaurantsPage() {
                           Edit
                         </button>
                         <button
+                          onClick={() => openStaffModal(r)}
+                          className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                        >
+                          Staff
+                        </button>
+                        <button
                           onClick={() => handleRegenerateKey(r.id)}
                           className="text-sm text-orange-600 hover:text-orange-800 font-medium"
                         >
@@ -190,6 +264,90 @@ export default function AdminRestaurantsPage() {
           </div>
         )}
       </main>
+
+      {/* Staff Modal */}
+      {staffModalOpen && staffModalRestaurant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-800">
+                Staff: {staffModalRestaurant.name}
+              </h2>
+              <button
+                onClick={() => setStaffModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-4 overflow-auto flex-1">
+              {/* Add staff form */}
+              <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Add Staff Member</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  <input
+                    type="text"
+                    placeholder="Name (e.g. 王小明)"
+                    value={newStaffName}
+                    onChange={(e) => setNewStaffName(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="LINE User ID"
+                    value={newStaffLineId}
+                    onChange={(e) => setNewStaffLineId(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                  />
+                  <select
+                    value={newStaffRole}
+                    onChange={(e) => setNewStaffRole(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                  >
+                    <option value="staff">Staff</option>
+                    <option value="manager">Manager</option>
+                  </select>
+                  <button
+                    onClick={addStaff}
+                    disabled={!newStaffName.trim() || !newStaffLineId.trim()}
+                    className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-4 rounded transition disabled:opacity-50"
+                  >
+                    Add Staff
+                  </button>
+                </div>
+              </div>
+
+              {/* Staff list */}
+              {staffLoading ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+                </div>
+              ) : staffList.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No staff members yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {staffList.map(s => (
+                    <div key={s.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                      <div>
+                        <p className="font-medium text-sm text-gray-800">{s.name}</p>
+                        <p className="text-xs text-gray-500">{s.line_user_id}</p>
+                        <p className="text-xs text-gray-400">{s.role} · {s.is_active ? 'Active' : 'Inactive'}</p>
+                      </div>
+                      <button
+                        onClick={() => removeStaff(s.id)}
+                        className="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
