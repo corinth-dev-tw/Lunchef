@@ -8,7 +8,7 @@ const VALID_STATUSES = ['pending', 'confirmed', 'preparing', 'arrived', 'complet
 // Admin auth middleware
 app.use('*', async (c, next) => {
   // Skip auth for login endpoint
-  if (c.req.path === '/login' && c.req.method === 'POST') {
+  if ((c.req.path === '/login' || c.req.path === '/api/admin/login') && c.req.method === 'POST') {
     return next();
   }
 
@@ -37,7 +37,11 @@ app.post('/login', async (c) => {
       return c.json({ error: 'Admin not configured' }, 500);
     }
 
-    if (!password || password !== adminPassword) {
+    if (!password) {
+      return c.json({ error: 'Password required' }, 400);
+    }
+
+    if (password !== adminPassword) {
       return c.json({ error: 'Invalid password' }, 401);
     }
 
