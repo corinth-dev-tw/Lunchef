@@ -8,12 +8,14 @@ import usersRoutes from './routes/users';
 import menuRoutes from './routes/menu';
 import dashboardRoutes from './routes/dashboard';
 import webhookRoutes from './routes/webhook';
+import adminRoutes from './routes/admin';
 
 export interface Env {
   DB: D1Database;
   CACHE: KVNamespace;
   LINE_CHANNEL_ACCESS_TOKEN: string;
   LINE_CHANNEL_SECRET: string;
+  ADMIN_PASSWORD: string;
 }
 
 export interface LineUser {
@@ -63,5 +65,6 @@ app.route('/api/users', usersRoutes);
 app.route('/api/menu', menuRoutes);
 app.route('/api/dashboard', dashboardRoutes);
 app.route('/webhook', webhookRoutes);
+app.route('/api/admin', adminRoutes);
 
 export default app;
