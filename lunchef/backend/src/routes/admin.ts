@@ -236,6 +236,84 @@ app.get('/locations', async (c) => {
   return c.json(results);
 });
 
+// === STAFF MANAGEMENT ===
+
+// GET /api/admin/restaurants/:id/staff
+app.get('/restaurants/:id/staff', async (c) => {
+  try {
+    const restaurantId = c.req.param('id');
+    const { results } = await c.env.DB.prepare(
+      'SELECT id, restaurant_id, line_user_id, name, role, is_active, created_at FROM restaurant_staff WHERE restaurant_id = ? ORDER BY created_at'
+    ).bind(restaurantId).all();
+    return c.json(results);
+  } catch (error) {
+    console.error('Get staff error:', error);
+    return c.json({ error: 'Failed to get staff' }, 500);
+  }
+});
+
+// POST /api/admin/restaurants/:id/staff
+app.post('/restaurants/:id/staff', async (c) => {
+  try {
+    const restaurantId = c.req.param('id');
+    const { line_user_id, name, role } = await c.req.json<{ line_user_id?: string; name?: string; role?: string }>();
+
+    if (!line_user_id || !name) {
+      return c.json({ error: 'line_user_id and name are required' }, 400);
+    }
+
+    const result = await c.env.DB.prepare(
+      'INSERT INTO restaurant_staff (restaurant_id, line_user_id, name, role) VALUES (?, ?, ?, ?)'
+    ).bind(restaurantId, line_user_id, name, role || 'staff').run();
+
+    return c.json({ success: true, id: result.meta?.last_row_id }, 201);
+  } catch (error) {
+    console.error('Add staff error:', error);
+    return c.json({ error: 'Failed to add staff' }, 500);
+  }
+});
+
+// PUT /api/admin/staff/:id
+app.put('/staff/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { name, role, is_active } = await c.req.json<{ name?: string; role?: string; is_active?: number }>();
+
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (name !== undefined) { updates.push('name = ?'); values.push(name); }
+    if (role !== undefined) { updates.push('role = ?'); values.push(role); }
+    if (is_active !== undefined) { updates.push('is_active = ?'); values.push(is_active); }
+
+    if (updates.length === 0) {
+      return c.json({ error: 'No fields to update' }, 400);
+    }
+
+    values.push(id);
+    await c.env.DB.prepare(
+      `UPDATE restaurant_staff SET ${updates.join(', ')} WHERE id = ?`
+    ).bind(...values).run();
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Update staff error:', error);
+    return c.json({ error: 'Failed to update staff' }, 500);
+  }
+});
+
+// DELETE /api/admin/staff/:id
+app.delete('/staff/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    await c.env.DB.prepare('DELETE FROM restaurant_staff WHERE id = ?').bind(id).run();
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Delete staff error:', error);
+    return c.json({ error: 'Failed to delete staff' }, 500);
+  }
+});
+
 function generateApiKey(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
