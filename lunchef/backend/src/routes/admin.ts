@@ -3,8 +3,6 @@ import type { Env } from '../index';
 
 const app = new Hono<{ Bindings: Env }>();
 
-const VALID_STATUSES = ['pending', 'confirmed', 'preparing', 'arrived', 'completed', 'cancelled'];
-
 // Admin auth middleware
 app.use('*', async (c, next) => {
   // Skip auth for login endpoint
@@ -111,16 +109,14 @@ app.post('/restaurants', async (c) => {
       return c.json({ error: 'name and department_store are required' }, 400);
     }
 
-    const apiKey = generateApiKey();
-
     const result = await c.env.DB.prepare(`
       INSERT INTO restaurants
-      (name, cuisine_type, department_store, floor, phone, image_url, order_cutoff_time, min_order_type, min_order_value, api_key)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (name, cuisine_type, department_store, floor, phone, image_url, order_cutoff_time, min_order_type, min_order_value)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       name, cuisine_type || 'asian', department_store, floor || '', phone || '',
       image_url || '', order_cutoff_time || '09:00', min_order_type || 'items',
-      min_order_value || 10, apiKey
+      min_order_value || 10
     ).run();
 
     const restaurantId = result.meta?.last_row_id;
@@ -143,7 +139,7 @@ app.post('/restaurants', async (c) => {
       }
     }
 
-    return c.json({ success: true, id: restaurantId, api_key: apiKey }, 201);
+    return c.json({ success: true, id: restaurantId }, 201);
   } catch (error) {
     console.error('Create restaurant error:', error);
     return c.json({ error: 'Failed to create restaurant' }, 500);
@@ -214,21 +210,6 @@ app.delete('/restaurants/:id', async (c) => {
   } catch (error) {
     console.error('Delete restaurant error:', error);
     return c.json({ error: 'Failed to delete restaurant' }, 500);
-  }
-});
-
-// POST /api/admin/restaurants/:id/regenerate-key
-app.post('/restaurants/:id/regenerate-key', async (c) => {
-  try {
-    const id = c.req.param('id');
-    const newKey = generateApiKey();
-    await c.env.DB.prepare(
-      'UPDATE restaurants SET api_key = ? WHERE id = ?'
-    ).bind(newKey, id).run();
-    return c.json({ success: true, api_key: newKey });
-  } catch (error) {
-    console.error('Regenerate key error:', error);
-    return c.json({ error: 'Failed to regenerate key' }, 500);
   }
 });
 
@@ -317,14 +298,5 @@ app.delete('/staff/:id', async (c) => {
     return c.json({ error: 'Failed to delete staff' }, 500);
   }
 });
-
-function generateApiKey(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 16; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
 
 export default app;

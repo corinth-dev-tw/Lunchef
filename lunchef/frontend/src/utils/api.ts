@@ -7,10 +7,6 @@ class ApiClient {
     this.token = token
   }
 
-  private getToken(): string | null {
-    return this.token
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -21,7 +17,7 @@ class ApiClient {
       ...(options.headers as Record<string, string> || {}),
     }
 
-    const token = this.getToken()
+    const token = this.token
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }

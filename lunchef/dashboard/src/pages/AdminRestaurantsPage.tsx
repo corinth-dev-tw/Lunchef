@@ -9,7 +9,6 @@ interface Restaurant {
   cuisine_type: string
   department_store: string
   floor: string
-  api_key: string
   order_cutoff_time: string
   min_order_type: string
   min_order_value: number
@@ -38,8 +37,6 @@ export default function AdminRestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [showKeyFor, setShowKeyFor] = useState<number | null>(null)
-
   // Staff modal state
   const [staffModalOpen, setStaffModalOpen] = useState(false)
   const [staffModalRestaurant, setStaffModalRestaurant] = useState<Restaurant | null>(null)
@@ -75,17 +72,6 @@ export default function AdminRestaurantsPage() {
     try {
       await adminApi.delete(`/api/admin/restaurants/${id}`)
       fetchRestaurants()
-    } catch (err: any) {
-      setError(err.message)
-    }
-  }
-
-  const handleRegenerateKey = async (id: number) => {
-    if (!confirm('Regenerate API key? The old key will stop working immediately.')) return
-    try {
-      const data = await adminApi.post<{ api_key: string }>(`/api/admin/restaurants/${id}/regenerate-key`, {})
-      setRestaurants(prev => prev.map(r => r.id === id ? { ...r, api_key: data.api_key } : r))
-      setShowKeyFor(id)
     } catch (err: any) {
       setError(err.message)
     }
@@ -195,7 +181,6 @@ export default function AdminRestaurantsPage() {
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Cuisine</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Location</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Cutoff</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">API Key</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
@@ -216,19 +201,6 @@ export default function AdminRestaurantsPage() {
                     <td className="py-3 px-4">
                       <span className="text-sm text-gray-600">{r.order_cutoff_time}</span>
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                          {showKeyFor === r.id ? r.api_key : '••••••••'}
-                        </code>
-                        <button
-                          onClick={() => setShowKeyFor(showKeyFor === r.id ? null : r.id)}
-                          className="text-xs text-gray-500 hover:text-gray-700"
-                        >
-                          {showKeyFor === r.id ? 'Hide' : 'Show'}
-                        </button>
-                      </div>
-                    </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button
@@ -242,12 +214,6 @@ export default function AdminRestaurantsPage() {
                           className="text-sm text-purple-600 hover:text-purple-800 font-medium"
                         >
                           Staff
-                        </button>
-                        <button
-                          onClick={() => handleRegenerateKey(r.id)}
-                          className="text-sm text-orange-600 hover:text-orange-800 font-medium"
-                        >
-                          Key
                         </button>
                         <button
                           onClick={() => handleDelete(r.id)}
