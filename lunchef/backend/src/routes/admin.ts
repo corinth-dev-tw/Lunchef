@@ -221,6 +221,55 @@ app.get('/locations', async (c) => {
   return c.json(results);
 });
 
+// POST /api/admin/locations
+app.post('/locations', async (c) => {
+  try {
+    const { name, address } = await c.req.json<{ name?: string; address?: string }>();
+    if (!name) {
+      return c.json({ error: 'name is required' }, 400);
+    }
+    const result = await c.env.DB.prepare(
+      'INSERT INTO locations (name, address) VALUES (?, ?)'
+    ).bind(name, address || '').run();
+    return c.json({ success: true, id: result.meta?.last_row_id }, 201);
+  } catch (error) {
+    console.error('Create location error:', error);
+    return c.json({ error: 'Failed to create location' }, 500);
+  }
+});
+
+// PUT /api/admin/locations/:id
+app.put('/locations/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { name, address } = await c.req.json<{ name?: string; address?: string }>();
+    if (!name) {
+      return c.json({ error: 'name is required' }, 400);
+    }
+    await c.env.DB.prepare(
+      'UPDATE locations SET name = ?, address = ? WHERE id = ?'
+    ).bind(name, address || '', id).run();
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Update location error:', error);
+    return c.json({ error: 'Failed to update location' }, 500);
+  }
+});
+
+// DELETE /api/admin/locations/:id (soft delete)
+app.delete('/locations/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    await c.env.DB.prepare(
+      'UPDATE locations SET is_active = 0 WHERE id = ?'
+    ).bind(id).run();
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Delete location error:', error);
+    return c.json({ error: 'Failed to delete location' }, 500);
+  }
+});
+
 // === STAFF MANAGEMENT ===
 
 // GET /api/admin/restaurants/:id/staff
@@ -296,6 +345,183 @@ app.delete('/staff/:id', async (c) => {
   } catch (error) {
     console.error('Delete staff error:', error);
     return c.json({ error: 'Failed to delete staff' }, 500);
+  }
+});
+
+// === MENU MANAGEMENT ===
+
+// GET /api/admin/restaurants/:id/menu
+app.get('/restaurants/:id/menu', async (c) => {
+  try {
+    const restaurantId = c.req.param('id');
+    const { results } = await c.env.DB.prepare(
+      'SELECT id, restaurant_id, name, description, price, category, image_url, available, created_at FROM menu_items WHERE restaurant_id = ? ORDER BY category, name'
+    ).bind(restaurantId).all();
+    return c.json(results);
+  } catch (error) {
+    console.error('Get menu error:', error);
+    return c.json({ error: 'Failed to get menu' }, 500);
+  }
+});
+
+// POST /api/admin/restaurants/:id/menu
+app.post('/restaurants/:id/menu', async (c) => {
+  try {
+    const restaurantId = c.req.param('id');
+    const { name, description, price, category, image_url } = await c.req.json<any>();
+
+    if (!name || price === undefined) {
+      return c.json({ error: 'name and price are required' }, 400);
+    }
+
+    const result = await c.env.DB.prepare(
+      'INSERT INTO menu_items (restaurant_id, name, description, price, category, image_url) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(restaurantId, name, description || '', price, category || 'main', image_url || '').run();
+
+    return c.json({ success: true, id: result.meta?.last_row_id }, 201);
+  } catch (error) {
+    console.error('Add menu item error:', error);
+    return c.json({ error: 'Failed to add menu item' }, 500);
+  }
+});
+
+// PUT /api/admin/menu/:id
+app.put('/menu/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { name, description, price, category, image_url, available } = await c.req.json<any>();
+
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (name !== undefined) { updates.push('name = ?'); values.push(name); }
+    if (description !== undefined) { updates.push('description = ?'); values.push(description); }
+    if (price !== undefined) { updates.push('price = ?'); values.push(price); }
+    if (category !== undefined) { updates.push('category = ?'); values.push(category); }
+    if (image_url !== undefined) { updates.push('image_url = ?'); values.push(image_url); }
+    if (available !== undefined) { updates.push('available = ?'); values.push(available); }
+
+    if (updates.length === 0) {
+      return c.json({ error: 'No fields to update' }, 400);
+    }
+
+    values.push(id);
+    await c.env.DB.prepare(
+      `UPDATE menu_items SET ${updates.join(', ')} WHERE id = ?`
+    ).bind(...values).run();
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Update menu item error:', error);
+    return c.json({ error: 'Failed to update menu item' }, 500);
+  }
+});
+
+// DELETE /api/admin/menu/:id (soft delete via available=0)
+app.delete('/menu/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    await c.env.DB.prepare(
+      'UPDATE menu_items SET available = 0 WHERE id = ?'
+    ).bind(id).run();
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Delete menu item error:', error);
+    return c.json({ error: 'Failed to delete menu item' }, 500);
+  }
+});
+
+// === GLOBAL ORDER OVERVIEW ===
+
+// GET /api/admin/orders
+app.get('/orders', async (c) => {
+  try {
+    const date = c.req.query('date');
+    const restaurantId = c.req.query('restaurant_id');
+    const status = c.req.query('status');
+
+    let sql = `
+      SELECT
+        o.id, o.order_number, o.pickup_time, o.order_date, o.total_amount, o.status, o.payment_method, o.created_at,
+        r.name as restaurant_name,
+        c.name as company_name,
+        l.name as location_name
+      FROM orders o
+      JOIN restaurants r ON o.restaurant_id = r.id
+      JOIN companies c ON o.company_id = c.id
+      JOIN locations l ON o.location_id = l.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    if (date) {
+      sql += ' AND o.order_date = ?';
+      params.push(date);
+    }
+    if (restaurantId) {
+      sql += ' AND o.restaurant_id = ?';
+      params.push(restaurantId);
+    }
+    if (status) {
+      sql += ' AND o.status = ?';
+      params.push(status);
+    }
+
+    sql += ' ORDER BY o.created_at DESC';
+
+    const stmt = c.env.DB.prepare(sql);
+    const { results } = params.length > 0 ? await stmt.bind(...params).all() : await stmt.all();
+    return c.json(results);
+  } catch (error) {
+    console.error('Get orders error:', error);
+    return c.json({ error: 'Failed to get orders' }, 500);
+  }
+});
+
+// === ANALYTICS ===
+
+// GET /api/admin/analytics/summary
+app.get('/analytics/summary', async (c) => {
+  try {
+    const date = c.req.query('date') || new Date().toISOString().split('T')[0];
+
+    // Total orders and revenue for the date
+    const orderStats = await c.env.DB.prepare(
+      `SELECT COUNT(*) as total_orders, COALESCE(SUM(total_amount), 0) as total_revenue
+       FROM orders WHERE order_date = ?`
+    ).bind(date).first<{ total_orders: number; total_revenue: number }>();
+
+    // Orders by restaurant
+    const { results: byRestaurant } = await c.env.DB.prepare(
+      `SELECT r.name as restaurant_name, COUNT(*) as order_count, COALESCE(SUM(o.total_amount), 0) as revenue
+       FROM orders o
+       JOIN restaurants r ON o.restaurant_id = r.id
+       WHERE o.order_date = ?
+       GROUP BY o.restaurant_id
+       ORDER BY order_count DESC`
+    ).bind(date).all();
+
+    // Orders by status
+    const { results: byStatus } = await c.env.DB.prepare(
+      `SELECT status, COUNT(*) as count FROM orders WHERE order_date = ? GROUP BY status`
+    ).bind(date).all();
+
+    // Active restaurants count
+    const restaurantStats = await c.env.DB.prepare(
+      'SELECT COUNT(*) as active_restaurants FROM restaurants WHERE is_active = 1'
+    ).first<{ active_restaurants: number }>();
+
+    return c.json({
+      date,
+      total_orders: orderStats?.total_orders || 0,
+      total_revenue: orderStats?.total_revenue || 0,
+      active_restaurants: restaurantStats?.active_restaurants || 0,
+      by_restaurant: byRestaurant,
+      by_status: byStatus,
+    });
+  } catch (error) {
+    console.error('Analytics error:', error);
+    return c.json({ error: 'Failed to get analytics' }, 500);
   }
 });
 
