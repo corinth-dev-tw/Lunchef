@@ -17,7 +17,8 @@ export default function LoginPage() {
       return
     }
 
-    const liffId = import.meta.env.VITE_LIFF_ID || '2010266926-wB4JsxVI'
+    // Use a separate LIFF ID for dashboard if available, fallback to main LIFF ID
+    const liffId = import.meta.env.VITE_DASHBOARD_LIFF_ID || import.meta.env.VITE_LIFF_ID || '2010266926-wB4JsxVI'
 
     liff.init({ liffId, withLoginOnExternalBrowser: true })
       .then(() => {
