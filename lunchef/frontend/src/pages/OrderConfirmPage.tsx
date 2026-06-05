@@ -36,6 +36,8 @@ export default function OrderConfirmPage() {
   let pickupTime: string | null = null
   let paymentMethod: string = 'cash'
   let orderDate: string | null = null
+  let companyName: string = ''
+  let taxId: string = ''
 
   try {
     cart = JSON.parse(sessionStorage.getItem('cart') || '[]')
@@ -43,6 +45,8 @@ export default function OrderConfirmPage() {
     pickupTime = sessionStorage.getItem('pickupTime')
     paymentMethod = sessionStorage.getItem('paymentMethod') || 'cash'
     orderDate = sessionStorage.getItem('orderDate')
+    companyName = sessionStorage.getItem('orderCompanyName') || user?.company_name || ''
+    taxId = sessionStorage.getItem('orderTaxId') || user?.tax_id || ''
   } catch {
     // Invalid session data
   }
@@ -59,6 +63,11 @@ export default function OrderConfirmPage() {
 
     if (!pickupTime || !orderDate || cart.length === 0) {
       setError('Missing order information. Please go back and try again.')
+      return
+    }
+
+    if (!companyName.trim() || !taxId.trim()) {
+      setError('Company name and tax ID are required')
       return
     }
 
@@ -85,7 +94,9 @@ export default function OrderConfirmPage() {
         pickup_time: pickupTime,
         order_date: orderDate,
         items,
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        company_name: companyName,
+        tax_id: taxId
       })
 
       // Clear cart
@@ -94,6 +105,8 @@ export default function OrderConfirmPage() {
       sessionStorage.removeItem('pickupTime')
       sessionStorage.removeItem('paymentMethod')
       sessionStorage.removeItem('orderDate')
+      sessionStorage.removeItem('orderCompanyName')
+      sessionStorage.removeItem('orderTaxId')
       window.dispatchEvent(new Event('cart-updated'))
 
       // Navigate to order detail
@@ -142,11 +155,11 @@ export default function OrderConfirmPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Company</span>
-              <span className="font-medium">{user?.company_name}</span>
+              <span className="font-medium">{companyName || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Tax ID</span>
-              <span className="font-medium">{user?.tax_id}</span>
+              <span className="font-medium">{taxId || '-'}</span>
             </div>
           </div>
 

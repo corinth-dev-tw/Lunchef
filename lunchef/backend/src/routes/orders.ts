@@ -27,6 +27,8 @@ interface CreateOrderBody {
   order_date: string;
   items: OrderItemInput[];
   payment_method?: string;
+  company_name?: string;
+  tax_id?: string;
 }
 
 // Helper: get current date/time in Asia/Taipei
@@ -138,7 +140,7 @@ app.get('/:id', lineAuthMiddleware, async (c) => {
 
   const order = await c.env.DB.prepare(`
     SELECT o.*, r.name as restaurant_name, l.name as location_name,
-           c.name as company_name, u.name as user_name
+           c.name as registered_company_name, u.name as user_name
     FROM orders o
     JOIN restaurants r ON o.restaurant_id = r.id
     JOIN locations l ON o.location_id = l.id
@@ -185,6 +187,8 @@ app.post('/', lineAuthMiddleware, async (c) => {
       order_date,
       items,
       payment_method,
+      company_name,
+      tax_id,
     } = parsed.data;
 
     // Verify authenticated user matches the order's user_id and company_id
@@ -294,9 +298,9 @@ app.post('/', lineAuthMiddleware, async (c) => {
 
     // Create order first, then items (reliable last_row_id retrieval)
     const orderResult = await c.env.DB.prepare(`
-      INSERT INTO orders (order_number, company_id, user_id, restaurant_id, location_id, pickup_time, order_date, total_amount, status, payment_method)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
-    `).bind(orderNumber, company_id, user_id, restaurant_id, location_id, pickup_time, order_date, totalAmount, payment_method || 'cash').run();
+      INSERT INTO orders (order_number, company_id, user_id, restaurant_id, location_id, pickup_time, order_date, total_amount, status, payment_method, company_name, tax_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+    `).bind(orderNumber, company_id, user_id, restaurant_id, location_id, pickup_time, order_date, totalAmount, payment_method || 'cash', company_name || null, tax_id || null).run();
 
     const orderId = orderResult.meta?.last_row_id;
 
@@ -324,7 +328,7 @@ app.post('/', lineAuthMiddleware, async (c) => {
 
       const notificationMessage = createOrderNotificationFlex(
         orderNumber,
-        company?.name || 'Unknown',
+        company_name || company?.name || 'Unknown',
         totalAmount,
         pickup_time,
         totalItems

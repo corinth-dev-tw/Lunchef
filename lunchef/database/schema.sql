@@ -38,9 +38,11 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS restaurants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
+    cuisine_type TEXT DEFAULT 'asian',
     department_store TEXT NOT NULL,
     floor TEXT,
     phone TEXT,
+    image_url TEXT,
     order_cutoff_time TEXT NOT NULL DEFAULT '09:00',
     min_order_type TEXT DEFAULT 'items',
     min_order_value INTEGER DEFAULT 10,
@@ -95,6 +97,8 @@ CREATE TABLE IF NOT EXISTS orders (
     total_amount INTEGER NOT NULL,
     status TEXT DEFAULT 'pending',
     payment_method TEXT DEFAULT 'cash',
+    company_name TEXT,
+    tax_id TEXT,
     cancellation_reason TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -147,8 +151,8 @@ INSERT OR IGNORE INTO locations (name, address) VALUES
 INSERT OR IGNORE INTO companies (name, tax_id, location_id) VALUES 
     ('Demo Company', '12345678', 1);
 
-INSERT OR IGNORE INTO restaurants (name, department_store, floor, phone, order_cutoff_time, min_order_type, min_order_value, api_key) VALUES 
-    ('想泰多 松高店', 'ATT 4 FUN', 'B1', '02-2345-6789', '09:00', 'items', 10, 'thai123');
+INSERT OR IGNORE INTO restaurants (name, cuisine_type, department_store, floor, phone, image_url, order_cutoff_time, min_order_type, min_order_value, api_key) VALUES 
+    ('想泰多 松高店', 'thai', 'ATT 4 FUN', 'B1', '02-2345-6789', 'https://images.unsplash.com/photo-1559314809-0d155014e29e?w=400', '09:00', 'items', 10, 'thai123');
 
 INSERT OR IGNORE INTO restaurant_locations (restaurant_id, location_id, is_available) VALUES 
     (1, 1, 1),

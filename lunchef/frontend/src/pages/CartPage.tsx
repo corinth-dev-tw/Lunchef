@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLiff } from '../contexts/LiffContext'
 import { ArrowLeft } from 'lucide-react'
 
 interface CartItem {
@@ -47,10 +48,17 @@ function getDateLabel(dateStr: string): string {
 
 export default function CartPage() {
   const navigate = useNavigate()
+  const { user } = useLiff()
   const [cart, setCart] = useState<CartItem[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [selectedPickupTime, setSelectedPickupTime] = useState('')
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash')
+  const [companyName, setCompanyName] = useState(() => {
+    return sessionStorage.getItem('orderCompanyName') || user?.company_name || ''
+  })
+  const [taxId, setTaxId] = useState(() => {
+    return sessionStorage.getItem('orderTaxId') || user?.tax_id || ''
+  })
   const orderDate = sessionStorage.getItem('selectedDate') || new Date().toISOString().split('T')[0]
 
   useEffect(() => {
@@ -60,6 +68,24 @@ export default function CartPage() {
     if (savedCart) setCart(JSON.parse(savedCart))
     if (savedRestaurant) setRestaurant(JSON.parse(savedRestaurant))
   }, [])
+
+  // Sync company info from user if not already set
+  useEffect(() => {
+    if (user && !companyName && !sessionStorage.getItem('orderCompanyName')) {
+      setCompanyName(user.company_name || '')
+    }
+    if (user && !taxId && !sessionStorage.getItem('orderTaxId')) {
+      setTaxId(user.tax_id || '')
+    }
+  }, [user])
+
+  useEffect(() => {
+    sessionStorage.setItem('orderCompanyName', companyName)
+  }, [companyName])
+
+  useEffect(() => {
+    sessionStorage.setItem('orderTaxId', taxId)
+  }, [taxId])
 
   const getCartTotal = () => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0)
@@ -83,6 +109,8 @@ export default function CartPage() {
     if (!selectedPickupTime) return false
     if (!restaurant) return false
     if (isCutoffPassed(restaurant.order_cutoff_time, orderDate)) return false
+    if (!companyName.trim()) return false
+    if (!taxId.trim()) return false
 
     const itemCount = getCartItemCount()
     const totalAmount = getCartTotal()
@@ -111,6 +139,8 @@ export default function CartPage() {
     if (restaurant.min_order_type === 'amount' && totalAmount < restaurant.min_order_value) {
       return `Need ${formatPrice(restaurant.min_order_value - totalAmount)} more (min: ${formatPrice(restaurant.min_order_value)})`
     }
+    if (!companyName.trim()) return 'Enter company name'
+    if (!taxId.trim()) return 'Enter tax ID'
     if (!selectedPickupTime) return 'Select a pickup time'
     return ''
   }
@@ -119,6 +149,8 @@ export default function CartPage() {
     sessionStorage.setItem('pickupTime', selectedPickupTime)
     sessionStorage.setItem('paymentMethod', selectedPaymentMethod)
     sessionStorage.setItem('orderDate', orderDate)
+    sessionStorage.setItem('orderCompanyName', companyName)
+    sessionStorage.setItem('orderTaxId', taxId)
     navigate('/order-confirm')
   }
 
@@ -165,6 +197,35 @@ export default function CartPage() {
           <div className="flex justify-between items-center pt-2 border-t">
             <span className="font-bold text-lg">Total</span>
             <span className="font-bold text-lg text-green-600">{formatPrice(getCartTotal())}</span>
+          </div>
+        </div>
+
+        {/* Company Info */}
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <h2 className="font-bold text-gray-800 mb-3">Company Info</h2>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Company Name</label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="e.g. ACME Corp"
+                className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                maxLength={100}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Tax ID</label>
+              <input
+                type="text"
+                value={taxId}
+                onChange={(e) => setTaxId(e.target.value)}
+                placeholder="e.g. 12345678"
+                className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                maxLength={20}
+              />
+            </div>
           </div>
         </div>
 
