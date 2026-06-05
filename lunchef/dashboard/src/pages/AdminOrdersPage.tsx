@@ -103,6 +103,12 @@ export default function AdminOrdersPage() {
               Locations
             </button>
             <button
+              onClick={() => navigate('/admin/staff-requests')}
+              className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+            >
+              Staff Requests
+            </button>
+            <button
               onClick={logout}
               className="text-gray-500 hover:text-gray-700 text-sm"
             >

@@ -9,6 +9,7 @@ import menuRoutes from './routes/menu';
 import dashboardRoutes from './routes/dashboard';
 import webhookRoutes from './routes/webhook';
 import adminRoutes from './routes/admin';
+import staffRoutes from './routes/staff';
 
 export interface Env {
   DB: D1Database;
@@ -66,5 +67,6 @@ app.route('/api/menu', menuRoutes);
 app.route('/api/dashboard', dashboardRoutes);
 app.route('/webhook', webhookRoutes);
 app.route('/api/admin', adminRoutes);
+app.route('/api/staff', staffRoutes);
 
 export default app;

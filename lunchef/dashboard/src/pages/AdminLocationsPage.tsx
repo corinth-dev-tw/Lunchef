@@ -110,6 +110,12 @@ export default function AdminLocationsPage() {
               Orders
             </button>
             <button
+              onClick={() => navigate('/admin/staff-requests')}
+              className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+            >
+              Staff Requests
+            </button>
+            <button
               onClick={startAdd}
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition"
             >
