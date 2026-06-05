@@ -525,4 +525,72 @@ app.get('/analytics/summary', async (c) => {
   }
 });
 
+// === STAFF REQUESTS ===
+
+// GET /api/admin/staff-requests
+app.get('/staff-requests', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(`
+      SELECT sr.*, r.name as restaurant_name
+      FROM staff_requests sr
+      LEFT JOIN restaurants r ON sr.restaurant_id = r.id
+      WHERE sr.status = 'pending'
+      ORDER BY sr.requested_at DESC
+    `).all();
+    return c.json(results);
+  } catch (error) {
+    console.error('Get staff requests error:', error);
+    return c.json({ error: 'Failed to get staff requests' }, 500);
+  }
+});
+
+// POST /api/admin/staff-requests/:id/approve
+app.post('/staff-requests/:id/approve', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { restaurant_id, role } = await c.req.json<{ restaurant_id?: number; role?: string }>();
+
+    if (!restaurant_id) {
+      return c.json({ error: 'restaurant_id required' }, 400);
+    }
+
+    const request = await c.env.DB.prepare(
+      'SELECT line_user_id, name FROM staff_requests WHERE id = ?'
+    ).bind(id).first<{ line_user_id: string; name: string }>();
+
+    if (!request) {
+      return c.json({ error: 'Request not found' }, 404);
+    }
+
+    // Create restaurant_staff record
+    await c.env.DB.prepare(
+      'INSERT OR REPLACE INTO restaurant_staff (restaurant_id, line_user_id, name, role) VALUES (?, ?, ?, ?)'
+    ).bind(restaurant_id, request.line_user_id, request.name, role || 'staff').run();
+
+    // Update request status
+    await c.env.DB.prepare(
+      'UPDATE staff_requests SET status = ?, restaurant_id = ?, role = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind('approved', restaurant_id, role || 'staff', id).run();
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Approve staff request error:', error);
+    return c.json({ error: 'Failed to approve request' }, 500);
+  }
+});
+
+// POST /api/admin/staff-requests/:id/reject
+app.post('/staff-requests/:id/reject', async (c) => {
+  try {
+    const id = c.req.param('id');
+    await c.env.DB.prepare(
+      'UPDATE staff_requests SET status = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind('rejected', id).run();
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Reject staff request error:', error);
+    return c.json({ error: 'Failed to reject request' }, 500);
+  }
+});
+
 export default app;

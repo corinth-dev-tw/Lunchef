@@ -7,6 +7,8 @@ import AdminRestaurantsPage from './pages/AdminRestaurantsPage'
 import AdminRestaurantForm from './pages/AdminRestaurantForm'
 import AdminLocationsPage from './pages/AdminLocationsPage'
 import AdminOrdersPage from './pages/AdminOrdersPage'
+import AdminStaffRequestsPage from './pages/AdminStaffRequestsPage'
+import StaffRegisterPage from './pages/StaffRegisterPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { AdminAuthProvider } from './contexts/AdminAuthContext'
 
@@ -26,6 +28,8 @@ function App() {
               <Route path="/admin/restaurants/:id/edit" element={<AdminRestaurantForm />} />
               <Route path="/admin/locations" element={<AdminLocationsPage />} />
               <Route path="/admin/orders" element={<AdminOrdersPage />} />
+              <Route path="/admin/staff-requests" element={<AdminStaffRequestsPage />} />
+              <Route path="/register-staff" element={<StaffRegisterPage />} />
             </Routes>
           </div>
         </BrowserRouter>

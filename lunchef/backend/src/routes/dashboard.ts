@@ -45,7 +45,21 @@ app.post('/line-login', async (c) => {
     }>();
 
     if (!staff) {
-      return c.json({ error: 'Your LINE account is not registered with any restaurant. Please contact your admin.' }, 403);
+      // Check if they have a pending/rejected staff request
+      const request = await c.env.DB.prepare(
+        'SELECT status FROM staff_requests WHERE line_user_id = ?'
+      ).bind(lineUserId).first<{ status: string }>();
+
+      if (request) {
+        if (request.status === 'pending') {
+          return c.json({ error: 'Your registration is pending admin approval. Please wait.' }, 403);
+        }
+        if (request.status === 'rejected') {
+          return c.json({ error: 'Your registration was rejected.' }, 403);
+        }
+      }
+
+      return c.json({ error: 'Your LINE account is not registered with any restaurant. Please visit /register-staff to apply.' }, 403);
     }
 
     const token = crypto.randomUUID();
