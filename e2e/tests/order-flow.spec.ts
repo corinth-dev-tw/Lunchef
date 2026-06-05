@@ -83,26 +83,21 @@ test.describe('Order Placement End-to-End', () => {
   })
 
   test('admin can view global orders with filters', async ({ request }) => {
-    // Admin login
+    // Admin login sets HttpOnly cookie; Playwright's request context handles the cookie jar
     const loginRes = await request.post(`${API_BASE}/api/admin/login`, {
       data: { password: ADMIN_PASSWORD },
       headers: { 'Content-Type': 'application/json' },
     })
     expect(loginRes.status()).toBe(200)
-    const { token } = await loginRes.json()
 
-    // Get orders with date filter
-    const ordersRes = await request.get(`${API_BASE}/api/admin/orders?date=2026-06-04`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    // Get orders with date filter using the cookie set by login
+    const ordersRes = await request.get(`${API_BASE}/api/admin/orders?date=2026-06-04`)
     expect(ordersRes.status()).toBe(200)
     const data = await ordersRes.json()
     expect(Array.isArray(data.orders || data)).toBe(true)
 
     // Test status filter
-    const statusRes = await request.get(`${API_BASE}/api/admin/orders?status=pending`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const statusRes = await request.get(`${API_BASE}/api/admin/orders?status=pending`)
     expect(statusRes.status()).toBe(200)
   })
 
@@ -112,11 +107,8 @@ test.describe('Order Placement End-to-End', () => {
       headers: { 'Content-Type': 'application/json' },
     })
     expect(loginRes.status()).toBe(200)
-    const { token } = await loginRes.json()
 
-    const res = await request.get(`${API_BASE}/api/admin/analytics/summary?date=2026-06-04`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const res = await request.get(`${API_BASE}/api/admin/analytics/summary?date=2026-06-04`)
     expect(res.status()).toBe(200)
     const data = await res.json()
     expect(data).toHaveProperty('total_orders')

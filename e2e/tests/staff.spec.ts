@@ -58,18 +58,15 @@ test.describe('Staff Registration Flow', () => {
   })
 
   test('admin can access staff request endpoints', async ({ request }) => {
-    // Admin login to get token
+    // Admin login sets HttpOnly cookie; Playwright's request context handles the cookie jar
     const loginRes = await request.post(`${API_BASE}/api/admin/login`, {
       data: { password: ADMIN_PASSWORD },
       headers: { 'Content-Type': 'application/json' },
     })
     expect(loginRes.status()).toBe(200)
-    const { token } = await loginRes.json()
 
-    // Get staff requests
-    const res = await request.get(`${API_BASE}/api/admin/staff-requests`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    // Get staff requests using the cookie set by login
+    const res = await request.get(`${API_BASE}/api/admin/staff-requests`)
     expect(res.status()).toBe(200)
     const data = await res.json()
     expect(Array.isArray(data.requests || data)).toBe(true)

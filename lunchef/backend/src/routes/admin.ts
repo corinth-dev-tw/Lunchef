@@ -11,28 +11,28 @@ import {
   AddStaffSchema,
   UpdateStaffSchema,
   AdminLoginSchema,
+  AdminOrdersQuerySchema,
+  DateQuerySchema,
 } from '../lib/validation';
+import { timingSafeEqual, parseSessionToken, parseCookie, buildSessionCookie } from '../utils/crypto';
 
 const app = new Hono<{ Bindings: Env }>();
 
 // Admin auth middleware
 app.use('*', async (c, next) => {
-  // Skip auth for login endpoint
-  if ((c.req.path === '/login' || c.req.path === '/api/admin/login') && c.req.method === 'POST') {
+  // Skip auth for login/logout endpoints
+  if (
+    (c.req.path === '/login' || c.req.path === '/api/admin/login' || c.req.path === '/logout') &&
+    (c.req.method === 'POST' || c.req.method === 'DELETE')
+  ) {
     return next();
   }
 
-  // Try cookie first, fall back to Authorization header
-  const cookie = c.req.header('Cookie') || '';
-  const cookieMatch = cookie.match(/admin_session=([^;]+)/);
-  let token = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
-
-  if (!token) {
-    const authHeader = c.req.header('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.slice(7);
-    }
-  }
+  const token = parseSessionToken(
+    c.req.header('Cookie'),
+    'admin_session',
+    c.req.header('Authorization')
+  );
 
   if (!token) {
     return c.json({ error: 'Unauthorized' }, 401);
@@ -59,14 +59,16 @@ app.post('/login', async (c) => {
     const adminPassword = c.env.ADMIN_PASSWORD;
 
     if (!adminPassword) {
-      return c.json({ error: 'Admin not configured' }, 500);
+      console.error('ADMIN_PASSWORD is not configured');
+      return c.json({ error: 'Login failed' }, 500);
     }
 
     if (!password) {
       return c.json({ error: 'Password required' }, 400);
     }
 
-    if (password !== adminPassword) {
+    const valid = await timingSafeEqual(password, adminPassword);
+    if (!valid) {
       return c.json({ error: 'Invalid password' }, 401);
     }
 
@@ -79,14 +81,35 @@ app.post('/login', async (c) => {
 
     // Set HttpOnly cookie for SPA auth
     const isProduction = c.env.ENVIRONMENT === 'production';
-    c.header('Set-Cookie',
-      `admin_session=${token}; HttpOnly; Secure; SameSite=None; Max-Age=28800; Path=/; ${isProduction ? 'Domain=.lunchef.antu-technology.com;' : ''}`
-    );
+    const domain = isProduction ? '.lunchef.antu-technology.com' : undefined;
+    c.header('Set-Cookie', buildSessionCookie('admin_session', token, 28800, domain));
 
-    return c.json({ success: true, token });
+    // Do not return token in body — it must stay in HttpOnly cookie
+    return c.json({ success: true });
   } catch (error) {
     console.error('Admin login error:', error);
     return c.json({ error: 'Login failed' }, 500);
+  }
+});
+
+// POST /api/admin/logout
+app.post('/logout', async (c) => {
+  try {
+    const cookieHeader = c.req.header('Cookie') || '';
+    const token = parseCookie(cookieHeader, 'admin_session');
+
+    if (token) {
+      await c.env.CACHE.delete(`admin_session:${token}`);
+    }
+
+    const isProduction = c.env.ENVIRONMENT === 'production';
+    const domain = isProduction ? '.lunchef.antu-technology.com' : undefined;
+    c.header('Set-Cookie', buildSessionCookie('admin_session', '', 0, domain));
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Admin logout error:', error);
+    return c.json({ error: 'Logout failed' }, 500);
   }
 });
 
@@ -489,9 +512,11 @@ app.delete('/menu/:id', async (c) => {
 // GET /api/admin/orders
 app.get('/orders', async (c) => {
   try {
-    const date = c.req.query('date');
-    const restaurantId = c.req.query('restaurant_id');
-    const status = c.req.query('status');
+    const queryParsed = AdminOrdersQuerySchema.safeParse(Object.fromEntries(new URL(c.req.url).searchParams));
+    if (!queryParsed.success) {
+      return c.json({ error: 'Invalid query parameters' }, 400);
+    }
+    const { date, restaurant_id: restaurantId, status } = queryParsed.data;
 
     let sql = `
       SELECT
@@ -536,7 +561,11 @@ app.get('/orders', async (c) => {
 // GET /api/admin/analytics/summary
 app.get('/analytics/summary', async (c) => {
   try {
-    const date = c.req.query('date') || new Date().toISOString().split('T')[0];
+    const queryParsed = DateQuerySchema.safeParse(Object.fromEntries(new URL(c.req.url).searchParams));
+    if (!queryParsed.success) {
+      return c.json({ error: 'Invalid query parameters' }, 400);
+    }
+    const date = queryParsed.data.date || new Date().toISOString().split('T')[0];
 
     // Total orders and revenue for the date
     const orderStats = await c.env.DB.prepare(

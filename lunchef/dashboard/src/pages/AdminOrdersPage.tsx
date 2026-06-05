@@ -33,7 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminOrdersPage() {
   const navigate = useNavigate()
-  const { token, logout } = useAdminAuth()
+  const { logout } = useAdminAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,12 +44,9 @@ export default function AdminOrdersPage() {
   const [filterStatus, setFilterStatus] = useState('')
 
   useEffect(() => {
-    if (token) {
-      adminApi.setToken(token)
-      fetchRestaurants()
-      fetchOrders()
-    }
-  }, [token])
+    fetchRestaurants()
+    fetchOrders()
+  }, [])
 
   const fetchRestaurants = async () => {
     try {

@@ -2,14 +2,15 @@ import { Hono } from 'hono';
 import type { Env } from '../index';
 import { dashboardAuthMiddleware } from '../middleware/auth';
 import { sendLineMessage, createStatusUpdateFlex } from '../utils/line';
-import { LineLoginSchema, UpdateOrderStatusSchema } from '../lib/validation';
+import { LineLoginSchema, UpdateOrderStatusSchema, DashboardOrdersQuerySchema, DateQuerySchema } from '../lib/validation';
+import { buildSessionCookie, parseCookie } from '../utils/crypto';
 
 const app = new Hono<{
   Bindings: Env;
   Variables: { restaurantId: number };
 }>();
 
-const VALID_STATUSES = ['pending', 'confirmed', 'preparing', 'arrived', 'completed', 'cancelled'];
+
 
 // POST /api/dashboard/line-login — authenticate staff via LINE
 app.post('/line-login', async (c) => {
@@ -73,13 +74,11 @@ app.post('/line-login', async (c) => {
 
     // Set HttpOnly cookie for SPA auth
     const isProduction = c.env.ENVIRONMENT === 'production';
-    c.header('Set-Cookie',
-      `dashboard_session=${token}; HttpOnly; Secure; SameSite=None; Max-Age=86400; Path=/; ${isProduction ? 'Domain=.lunchef.antu-technology.com;' : ''}`
-    );
+    const domain = isProduction ? '.lunchef.antu-technology.com' : undefined;
+    c.header('Set-Cookie', buildSessionCookie('dashboard_session', token, 86400, domain));
 
     return c.json({
       success: true,
-      token,
       restaurant: { id: staff.restaurant_id, name: staff.restaurant_name },
       staff: { name: staff.name, role: staff.role },
     });
@@ -89,13 +88,38 @@ app.post('/line-login', async (c) => {
   }
 });
 
+// POST /api/dashboard/logout
+app.post('/logout', async (c) => {
+  try {
+    const cookieHeader = c.req.header('Cookie') || '';
+    const token = parseCookie(cookieHeader, 'dashboard_session');
+
+    if (token) {
+      await c.env.CACHE.delete(`dashboard_session:${token}`);
+    }
+
+    const isProduction = c.env.ENVIRONMENT === 'production';
+    const domain = isProduction ? '.lunchef.antu-technology.com' : undefined;
+    c.header('Set-Cookie', buildSessionCookie('dashboard_session', '', 0, domain));
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Dashboard logout error:', error);
+    return c.json({ error: 'Logout failed' }, 500);
+  }
+});
+
 // All routes below require dashboard auth
 app.use('*', dashboardAuthMiddleware);
 
 // GET /api/dashboard/orders
 app.get('/orders', async (c) => {
   const restaurantId = c.get('restaurantId');
-  const date = c.req.query('date') || new Date().toISOString().split('T')[0];
+  const queryParsed = DashboardOrdersQuerySchema.safeParse(Object.fromEntries(new URL(c.req.url).searchParams));
+  if (!queryParsed.success) {
+    return c.json({ error: 'Invalid query parameters' }, 400);
+  }
+  const date = queryParsed.data.date || new Date().toISOString().split('T')[0];
 
   const { results } = await c.env.DB.prepare(`
     SELECT o.*, c.name as company_name, u.name as user_name, u.phone as user_phone
@@ -201,7 +225,11 @@ app.put('/orders/:id/status', async (c) => {
 // GET /api/dashboard/stats
 app.get('/stats', async (c) => {
   const restaurantId = c.get('restaurantId');
-  const date = c.req.query('date') || new Date().toISOString().split('T')[0];
+  const queryParsed = DateQuerySchema.safeParse(Object.fromEntries(new URL(c.req.url).searchParams));
+  if (!queryParsed.success) {
+    return c.json({ error: 'Invalid query parameters' }, 400);
+  }
+  const date = queryParsed.data.date || new Date().toISOString().split('T')[0];
 
   const stats = await c.env.DB.prepare(`
     SELECT

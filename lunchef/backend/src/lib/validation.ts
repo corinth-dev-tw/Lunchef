@@ -64,18 +64,18 @@ export const UpdateOrderStatusSchema = z.object({
 
 export const ApproveStaffRequestSchema = z.object({
   restaurant_id: z.number().int().positive(),
-  role: z.string().max(20).optional(),
+  role: z.enum(['staff', 'manager']).optional(),
 });
 
 export const AddStaffSchema = z.object({
   line_user_id: z.string().min(1).max(50),
   name: z.string().min(1).max(100),
-  role: z.string().max(20).optional(),
+  role: z.enum(['staff', 'manager']).optional(),
 });
 
 export const UpdateStaffSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  role: z.string().max(20).optional(),
+  role: z.enum(['staff', 'manager']).optional(),
   is_active: z.number().int().min(0).max(1).optional(),
 });
 
@@ -85,4 +85,19 @@ export const LineLoginSchema = z.object({
 
 export const AdminLoginSchema = z.object({
   password: z.string().min(1).max(200),
+});
+
+// Query parameter schemas
+export const DateQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+export const AdminOrdersQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  restaurant_id: z.coerce.number().int().positive().optional(),
+  status: z.enum(['pending', 'confirmed', 'preparing', 'arrived', 'completed', 'cancelled']).optional(),
+});
+
+export const DashboardOrdersQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });

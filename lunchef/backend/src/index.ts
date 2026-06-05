@@ -53,10 +53,11 @@ const getAllowedOrigins = (env: Env): string[] => {
 app.use('*', cors({
   origin: (origin, c) => {
     const allowed = getAllowedOrigins(c.env);
-    return allowed.includes(origin) ? origin : allowed[0];
+    // Only reflect allowed origins; return empty string for disallowed origins
+    return origin && allowed.includes(origin) ? origin : '';
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
   credentials: true,
 }));
 
@@ -77,6 +78,8 @@ app.use('*', async (c, next) => {
   c.header('X-Frame-Options', 'DENY');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  c.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  c.header('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none';");
 });
 
 // Health check

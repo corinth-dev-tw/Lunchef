@@ -1,25 +1,27 @@
 import React, { createContext, useContext, useState } from 'react'
+import { adminApi } from '../utils/adminApi'
 
 interface AdminAuthContextType {
   isAdmin: boolean
   login: () => void
-  logout: () => void
+  logout: () => Promise<void>
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined)
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState(() => {
-    // Check if we have an admin session by attempting a lightweight API call
-    // The actual auth is validated server-side via HttpOnly cookie
-    return false
-  })
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const login = () => {
     setIsAdmin(true)
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await adminApi.post('/api/admin/logout', {})
+    } catch {
+      // Best-effort: still clear local state even if logout call fails
+    }
     setIsAdmin(false)
   }
 
@@ -33,7 +35,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 export function useAdminAuth() {
   const context = useContext(AdminAuthContext)
   if (context === undefined) {
-    throw new Error('useAdminAuth must be used within an AdminAuthProvider')
+    throw new Error('useAdminAuth must be used within a AdminAuthProvider')
   }
   return context
 }

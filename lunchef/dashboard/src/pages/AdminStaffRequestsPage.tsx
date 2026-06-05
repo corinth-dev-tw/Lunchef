@@ -20,7 +20,7 @@ interface Restaurant {
 
 export default function AdminStaffRequestsPage() {
   const navigate = useNavigate()
-  const { token, logout } = useAdminAuth()
+  const { logout } = useAdminAuth()
   const [requests, setRequests] = useState<StaffRequest[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,12 +32,9 @@ export default function AdminStaffRequestsPage() {
   const [processing, setProcessing] = useState(false)
 
   useEffect(() => {
-    if (token) {
-      adminApi.setToken(token)
-      fetchRequests()
-      fetchRestaurants()
-    }
-  }, [token])
+    fetchRequests()
+    fetchRestaurants()
+  }, [])
 
   const fetchRequests = async () => {
     try {

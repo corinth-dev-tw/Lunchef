@@ -6,7 +6,7 @@ interface AuthContextType {
   restaurantId: number | null
   restaurantName: string | null
   login: (restaurantId: number, restaurantName: string) => void
-  logout: () => void
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -36,7 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRestaurantName(name)
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post('/api/dashboard/logout', {})
+    } catch {
+      // Best-effort: still clear local state even if logout call fails
+    }
     localStorage.removeItem('dashboard_restaurant_id')
     localStorage.removeItem('dashboard_restaurant_name')
     setIsLoggedIn(false)

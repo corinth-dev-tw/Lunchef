@@ -11,7 +11,7 @@ interface Location {
 
 export default function AdminLocationsPage() {
   const navigate = useNavigate()
-  const { token, logout } = useAdminAuth()
+  const { logout } = useAdminAuth()
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -22,11 +22,8 @@ export default function AdminLocationsPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (token) {
-      adminApi.setToken(token)
-      fetchLocations()
-    }
-  }, [token])
+    fetchLocations()
+  }, [])
 
   const fetchLocations = async () => {
     try {

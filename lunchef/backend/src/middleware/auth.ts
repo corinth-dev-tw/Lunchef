@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 import type { Env } from '../index';
+import { parseSessionToken } from '../utils/crypto';
 
 interface LineProfile {
   userId: string;
@@ -66,17 +67,11 @@ export const dashboardAuthMiddleware: MiddlewareHandler<{
   Bindings: Env;
   Variables: { restaurantId: number };
 }> = async (c, next) => {
-  // Try cookie first, fall back to Authorization header
-  const cookie = c.req.header('Cookie') || '';
-  const cookieMatch = cookie.match(/dashboard_session=([^;]+)/);
-  let token = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
-
-  if (!token) {
-    const authHeader = c.req.header('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.slice(7);
-    }
-  }
+  const token = parseSessionToken(
+    c.req.header('Cookie'),
+    'dashboard_session',
+    c.req.header('Authorization')
+  );
 
   if (!token) {
     return c.json({ error: 'Unauthorized: Missing session' }, 401);

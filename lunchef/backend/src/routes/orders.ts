@@ -354,8 +354,7 @@ app.post('/', lineAuthMiddleware, async (c) => {
     }, 201);
   } catch (error: any) {
     console.error('Create order error:', error);
-    const message = error?.message || String(error);
-    return c.json({ error: 'Failed to create order', detail: message }, 500);
+    return c.json({ error: 'Failed to create order' }, 500);
   }
 });
 

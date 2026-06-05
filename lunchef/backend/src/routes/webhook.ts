@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from '../index';
+import { timingSafeEqual } from '../utils/crypto';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -20,7 +21,7 @@ async function verifySignature(
   );
   const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(body));
   const computed = btoa(String.fromCharCode(...new Uint8Array(sig)));
-  return computed === signature;
+  return timingSafeEqual(computed, signature);
 }
 
 // Deduplicate webhook events using webhookEventId

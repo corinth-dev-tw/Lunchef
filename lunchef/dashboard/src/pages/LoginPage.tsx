@@ -48,7 +48,6 @@ export default function LoginPage() {
 
       const data = await api.post<{
         success: boolean
-        token: string
         restaurant: { id: number; name: string }
         staff?: { name: string; role: string }
       }>('/api/dashboard/line-login', { access_token: accessToken })

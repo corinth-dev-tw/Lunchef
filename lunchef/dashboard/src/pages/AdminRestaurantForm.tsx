@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useAdminAuth } from '../contexts/AdminAuthContext'
 import { adminApi } from '../utils/adminApi'
 import { ArrowLeft, X } from 'lucide-react'
 
@@ -26,7 +25,6 @@ const DEFAULT_PICKUP_TIMES = ['11:30', '12:00', '12:30']
 export default function AdminRestaurantForm() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { token } = useAdminAuth()
   const isEdit = !!id
 
   const [locations, setLocations] = useState<Location[]>([])
@@ -50,12 +48,9 @@ export default function AdminRestaurantForm() {
   })
 
   useEffect(() => {
-    if (token) {
-      adminApi.setToken(token)
-      fetchLocations()
-      if (isEdit) fetchRestaurant()
-    }
-  }, [token])
+    fetchLocations()
+    if (isEdit) fetchRestaurant()
+  }, [])
 
   const fetchLocations = async () => {
     try {

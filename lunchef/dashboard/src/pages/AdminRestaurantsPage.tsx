@@ -51,7 +51,7 @@ const CUISINE_LABELS: Record<string, string> = {
 
 export default function AdminRestaurantsPage() {
   const navigate = useNavigate()
-  const { token, logout } = useAdminAuth()
+  const { logout } = useAdminAuth()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -76,12 +76,9 @@ export default function AdminRestaurantsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null)
 
   useEffect(() => {
-    if (token) {
-      adminApi.setToken(token)
-      fetchRestaurants()
-      fetchAnalytics()
-    }
-  }, [token])
+    fetchRestaurants()
+    fetchAnalytics()
+  }, [])
 
   const fetchAnalytics = async () => {
     try {
