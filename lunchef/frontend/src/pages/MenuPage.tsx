@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../utils/api'
-import { ArrowLeft, UtensilsCrossed, Salad, Minus, Plus } from 'lucide-react'
+import { ArrowLeft, UtensilsCrossed, Salad, Minus, Plus, Calendar } from 'lucide-react'
 
 interface MenuItem {
   id: number
@@ -72,6 +72,7 @@ export default function MenuPage() {
   useEffect(() => {
     if (cart.length > 0) {
       sessionStorage.setItem('cart', JSON.stringify(cart))
+      window.dispatchEvent(new Event('cart-updated'))
     }
   }, [cart])
 
@@ -155,6 +156,7 @@ export default function MenuPage() {
   const goToCart = () => {
     sessionStorage.setItem('cart', JSON.stringify(cart))
     sessionStorage.setItem('restaurant', JSON.stringify(restaurant))
+    window.dispatchEvent(new Event('cart-updated'))
     navigate('/cart')
   }
 
@@ -208,7 +210,7 @@ export default function MenuPage() {
         {/* Date & Cutoff Info Bar */}
         <div className="px-4 py-2 flex items-center justify-between bg-white border-b">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">📅</span>
+            <Calendar className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">
               {orderDate === new Date().toISOString().split('T')[0] ? 'Today' : orderDate}
             </span>
@@ -276,7 +278,7 @@ export default function MenuPage() {
 
       {/* Cart Bottom Bar */}
       {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-[60] px-4 py-3">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-[60] px-4 py-3 safe-area-pb">
           <div className="flex justify-between items-center mb-2">
             <div>
               <span className="font-bold text-gray-800">{getCartItemCount()} items</span>

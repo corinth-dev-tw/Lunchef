@@ -15,10 +15,6 @@ interface Restaurant {
   image_url?: string
 }
 
-function formatPrice(price: number): string {
-  return `$${price.toLocaleString()}`
-}
-
 export default function RestaurantListPage() {
   const navigate = useNavigate()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])

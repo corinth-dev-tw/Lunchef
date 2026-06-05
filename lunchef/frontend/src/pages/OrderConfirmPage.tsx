@@ -94,6 +94,7 @@ export default function OrderConfirmPage() {
       sessionStorage.removeItem('pickupTime')
       sessionStorage.removeItem('paymentMethod')
       sessionStorage.removeItem('orderDate')
+      window.dispatchEvent(new Event('cart-updated'))
 
       // Navigate to order detail
       navigate(`/orders/${data.order_id}`)
