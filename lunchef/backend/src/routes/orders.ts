@@ -3,6 +3,7 @@ import type { Env } from '../index';
 import type { LineUser } from '../index';
 import { lineAuthMiddleware } from '../middleware/auth';
 import { sendLineMessage, createOrderNotificationFlex } from '../utils/line';
+import { CreateOrderSchema } from '../lib/validation';
 
 const app = new Hono<{
   Bindings: Env;
@@ -56,15 +57,16 @@ function getTaipeiDateParts(): { dateStr: string; hours: number; minutes: number
   };
 }
 
-// Helper: generate unique order number (race-condition free)
+// Helper: generate unique order number using crypto RNG
 function generateOrderNumber(): string {
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' }).replace(/-/g, '');
-  // Random 4-char suffix (base36) for uniqueness without sequential counter
-  const random = Math.floor(Math.random() * 46656)
+  // Use crypto.getRandomValues for cryptographically secure randomness
+  const random = crypto.getRandomValues(new Uint32Array(1))[0]
     .toString(36)
+    .toUpperCase()
     .padStart(4, '0')
-    .toUpperCase();
+    .slice(0, 4);
   return `LCE-${dateStr}-${random}`;
 }
 
@@ -169,7 +171,11 @@ app.get('/:id', lineAuthMiddleware, async (c) => {
 app.post('/', lineAuthMiddleware, async (c) => {
   try {
     const user = c.get('user');
-    const body = await c.req.json<CreateOrderBody>();
+    const body = await c.req.json();
+    const parsed = CreateOrderSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+    }
     const {
       company_id,
       user_id,
@@ -179,19 +185,7 @@ app.post('/', lineAuthMiddleware, async (c) => {
       order_date,
       items,
       payment_method,
-    } = body;
-
-    // Validate required fields
-    if (!company_id || !user_id || !restaurant_id || !location_id || !pickup_time || !order_date || !items || items.length === 0) {
-      return c.json({ error: 'Missing required fields' }, 400);
-    }
-
-    // Validate items structure
-    for (const item of items) {
-      if (!item.menu_item_id || !item.quantity || item.quantity < 1) {
-        return c.json({ error: 'Invalid item data' }, 400);
-      }
-    }
+    } = parsed.data;
 
     // Verify authenticated user matches the order's user_id and company_id
     const authedUser = await c.env.DB.prepare(

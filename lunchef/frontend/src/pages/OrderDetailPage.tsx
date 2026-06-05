@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../utils/api'
+import { ArrowLeft } from 'lucide-react'
 
 interface OrderDetail {
   id: number
@@ -32,6 +33,10 @@ const statusColors: Record<string, string> = {
   arrived: 'bg-purple-100 text-purple-800',
   completed: 'bg-green-100 text-green-800',
   cancelled: 'bg-red-100 text-red-800'
+}
+
+function formatPrice(price: number): string {
+  return `$${price.toLocaleString()}`
 }
 
 export default function OrderDetailPage() {
@@ -94,8 +99,8 @@ export default function OrderDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm p-4">
-        <button onClick={() => navigate('/orders')} className="text-gray-600 mb-2">
-          ← Back
+        <button onClick={() => navigate('/orders')} className="text-gray-600 mb-2 flex items-center gap-1">
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <h1 className="text-xl font-bold text-gray-800">Order Details</h1>
       </header>
@@ -159,18 +164,18 @@ export default function OrderDetailPage() {
               <div key={item.id} className="flex justify-between items-start">
                 <div>
                   <p className="font-bold">{item.menu_item_name}</p>
-                  <p className="text-sm text-gray-600">Qty: {item.quantity} × ${item.unit_price}</p>
+                  <p className="text-sm text-gray-600">Qty: {item.quantity} × {formatPrice(item.unit_price)}</p>
                   {item.special_requests && (
                     <p className="text-sm text-orange-600 mt-1">Note: {item.special_requests}</p>
                   )}
                 </div>
-                <p className="font-bold">${item.unit_price * item.quantity}</p>
+                <p className="font-bold">{formatPrice(item.unit_price * item.quantity)}</p>
               </div>
             ))}
           </div>
           <div className="mt-4 pt-4 border-t flex justify-between items-center">
             <span className="font-bold text-lg">Total</span>
-            <span className="font-bold text-xl text-green-600">${order.total_amount}</span>
+            <span className="font-bold text-xl text-green-600">{formatPrice(order.total_amount)}</span>
           </div>
         </div>
       </div>

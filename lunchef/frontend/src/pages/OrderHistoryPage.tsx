@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiff } from '../contexts/LiffContext'
 import { api } from '../utils/api'
+import { ArrowLeft } from 'lucide-react'
 
 interface Order {
   id: number
@@ -22,6 +23,10 @@ const statusColors: Record<string, string> = {
   arrived: 'bg-purple-100 text-purple-800',
   completed: 'bg-green-100 text-green-800',
   cancelled: 'bg-red-100 text-red-800'
+}
+
+function formatPrice(price: number): string {
+  return `$${price.toLocaleString()}`
 }
 
 export default function OrderHistoryPage() {
@@ -76,8 +81,8 @@ export default function OrderHistoryPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm p-4">
-        <button onClick={() => navigate('/')} className="text-gray-600 mb-2">
-          ← Back
+        <button onClick={() => navigate('/')} className="text-gray-600 mb-2 flex items-center gap-1">
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <h1 className="text-xl font-bold text-gray-800">Order History</h1>
       </header>
@@ -111,7 +116,7 @@ export default function OrderHistoryPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Pickup: {order.order_date} {order.pickup_time}</span>
-                <span className="font-bold">${order.total_amount}</span>
+                <span className="font-bold">{formatPrice(order.total_amount)}</span>
               </div>
             </button>
           ))

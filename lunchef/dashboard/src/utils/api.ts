@@ -1,16 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787'
 
 class ApiClient {
-  private token: string | null = null
-
-  setToken(token: string | null) {
-    this.token = token
-  }
-
-  private getToken(): string | null {
-    return this.token || localStorage.getItem('dashboard_token')
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -21,19 +11,14 @@ class ApiClient {
       ...(options.headers as Record<string, string> || {}),
     }
 
-    const token = this.getToken()
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-
     const response = await fetch(url, {
       ...options,
       headers,
+      credentials: 'include', // Send cookies cross-origin
     })
 
     if (response.status === 401) {
-      // Token expired or invalid — clear and reload
-      localStorage.removeItem('dashboard_token')
+      // Token expired or invalid — clear state and reload
       localStorage.removeItem('dashboard_restaurant_id')
       localStorage.removeItem('dashboard_restaurant_name')
       window.location.href = '/'

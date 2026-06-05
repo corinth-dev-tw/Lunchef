@@ -61,17 +61,27 @@ export const lineAuthMiddleware: MiddlewareHandler<{
   await next();
 };
 
-// Dashboard auth: verify bearer token stored in KV
+// Dashboard auth: verify session token from cookie or Authorization header
 export const dashboardAuthMiddleware: MiddlewareHandler<{
   Bindings: Env;
   Variables: { restaurantId: number };
 }> = async (c, next) => {
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized: Missing Authorization header' }, 401);
+  // Try cookie first, fall back to Authorization header
+  const cookie = c.req.header('Cookie') || '';
+  const cookieMatch = cookie.match(/dashboard_session=([^;]+)/);
+  let token = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+
+  if (!token) {
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.slice(7);
+    }
   }
 
-  const token = authHeader.slice(7);
+  if (!token) {
+    return c.json({ error: 'Unauthorized: Missing session' }, 401);
+  }
+
   const sessionData = await c.env.CACHE.get(`dashboard_session:${token}`);
 
   if (!sessionData) {

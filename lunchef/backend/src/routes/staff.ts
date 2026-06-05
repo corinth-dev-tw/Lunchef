@@ -1,16 +1,18 @@
 import { Hono } from 'hono';
 import type { Env } from '../index';
+import { LineLoginSchema } from '../lib/validation';
 
 const app = new Hono<{ Bindings: Env }>();
 
 // POST /api/staff/register — self-register via LINE
 app.post('/register', async (c) => {
   try {
-    const { access_token } = await c.req.json<{ access_token?: string }>();
-
-    if (!access_token) {
-      return c.json({ error: 'access_token required' }, 400);
+    const body = await c.req.json();
+    const parsed = LineLoginSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
     }
+    const { access_token } = parsed.data;
 
     // Verify with LINE Profile API
     const profileRes = await fetch('https://api.line.me/v2/profile', {
@@ -58,11 +60,12 @@ app.post('/register', async (c) => {
 // POST /api/staff/status — check current registration status
 app.post('/status', async (c) => {
   try {
-    const { access_token } = await c.req.json<{ access_token?: string }>();
-
-    if (!access_token) {
-      return c.json({ error: 'access_token required' }, 400);
+    const body = await c.req.json();
+    const parsed = LineLoginSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
     }
+    const { access_token } = parsed.data;
 
     const profileRes = await fetch('https://api.line.me/v2/profile', {
       headers: { Authorization: `Bearer ${access_token}` },

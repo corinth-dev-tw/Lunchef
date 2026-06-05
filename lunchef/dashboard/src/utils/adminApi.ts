@@ -1,12 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787'
 
 class AdminApiClient {
-  private token: string | null = null
-
-  setToken(token: string | null) {
-    this.token = token
-  }
-
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE}${endpoint}`
     const headers: Record<string, string> = {
@@ -14,11 +8,17 @@ class AdminApiClient {
       ...(options.headers as Record<string, string> || {}),
     }
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`
-    }
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include', // Send cookies cross-origin
+    })
 
-    const response = await fetch(url, { ...options, headers })
+    if (response.status === 401) {
+      // Token expired or invalid — redirect to login
+      window.location.href = '/admin'
+      throw new Error('Session expired. Please log in again.')
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))

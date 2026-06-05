@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiff } from '../contexts/LiffContext'
 import { api } from '../utils/api'
+import { MapPin, X } from 'lucide-react'
 
 interface Location {
   id: number
@@ -150,7 +151,7 @@ export default function HomePage() {
           onClick={() => setShowLocationPicker(true)}
           className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-3 flex items-center gap-3 text-left hover:bg-gray-50 transition"
         >
-          <span className="text-xl">📍</span>
+          <MapPin className="w-5 h-5 text-green-600" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-gray-500 font-medium">Deliver to</p>
             <p className="text-sm font-bold text-gray-800 truncate">
@@ -250,7 +251,7 @@ export default function HomePage() {
                 onClick={() => setShowLocationPicker(false)}
                 className="text-gray-400 hover:text-gray-600 text-xl"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
             <div className="overflow-y-auto p-4 space-y-2">

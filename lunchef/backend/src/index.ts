@@ -10,6 +10,7 @@ import dashboardRoutes from './routes/dashboard';
 import webhookRoutes from './routes/webhook';
 import adminRoutes from './routes/admin';
 import staffRoutes from './routes/staff';
+import { rateLimitMiddleware } from './middleware/rateLimit';
 
 export interface Env {
   DB: D1Database;
@@ -17,6 +18,7 @@ export interface Env {
   LINE_CHANNEL_ACCESS_TOKEN: string;
   LINE_CHANNEL_SECRET: string;
   ADMIN_PASSWORD: string;
+  ENVIRONMENT: string;
 }
 
 export interface LineUser {
@@ -32,15 +34,20 @@ const app = new Hono<{
   };
 }>();
 
-// CORS: allow configured origins via environment or fallback
+// CORS: strict origin checking based on environment
 const getAllowedOrigins = (env: Env): string[] => {
-  const defaults = [
+  if (env.ENVIRONMENT === 'production') {
+    return [
+      'https://app.lunchef.antu-technology.com',
+      'https://dashboard.lunchef.antu-technology.com',
+    ];
+  }
+  return [
     'http://localhost:5173',
     'http://localhost:5174',
     'https://app.lunchef.antu-technology.com',
     'https://dashboard.lunchef.antu-technology.com',
   ];
-  return defaults;
 };
 
 app.use('*', cors({
@@ -54,6 +61,23 @@ app.use('*', cors({
 }));
 
 app.use('*', logger());
+
+// Rate limiting: general API limit
+app.use('/api/*', rateLimitMiddleware({ max: 100, window: 60 }));
+// Stricter limits for sensitive endpoints
+app.use('/api/admin/login', rateLimitMiddleware({ max: 5, window: 300 }));
+app.use('/api/dashboard/line-login', rateLimitMiddleware({ max: 10, window: 300 }));
+app.use('/api/staff/register', rateLimitMiddleware({ max: 10, window: 3600 }));
+app.use('/api/orders', rateLimitMiddleware({ max: 30, window: 60 }));
+
+// Security headers
+app.use('*', async (c, next) => {
+  await next();
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+});
 
 // Health check
 app.get('/', (c) => c.json({ message: 'Lunchef API', version: '1.0.0' }));

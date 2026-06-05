@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 // Auth context not needed here since api client handles token
 import { api } from '../utils/api'
+import { ArrowLeft } from 'lucide-react'
 
 interface OrderDetail {
   id: number
@@ -115,7 +116,7 @@ export default function OrderDetailPage() {
       <header className="bg-white shadow-sm p-4 print:hidden">
         <div className="flex justify-between items-center">
           <button onClick={() => navigate('/orders')} className="text-gray-600">
-            ← Back to Orders
+            <ArrowLeft className="w-4 h-4 inline" /> Back to Orders
           </button>
           <button
             onClick={handlePrint}

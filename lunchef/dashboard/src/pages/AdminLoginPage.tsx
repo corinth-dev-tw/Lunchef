@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../contexts/AdminAuthContext'
+import { Shield, ArrowLeft } from 'lucide-react'
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
@@ -21,6 +22,7 @@ export default function AdminLoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
+        credentials: 'include',
       })
 
       const data = await res.json()
@@ -28,7 +30,7 @@ export default function AdminLoginPage() {
         throw new Error(data.error || 'Login failed')
       }
 
-      login(data.token)
+      login()
       navigate('/admin/restaurants')
     } catch (err: any) {
       setError(err.message)
@@ -42,7 +44,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🛡️</span>
+            <Shield className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Admin Panel</h1>
           <p className="text-gray-500 mt-1">Lunchef Management</p>
@@ -77,9 +79,9 @@ export default function AdminLoginPage() {
 
         <button
           onClick={() => navigate('/')}
-          className="w-full mt-4 text-gray-500 text-sm hover:text-gray-700"
+          className="w-full mt-4 text-gray-500 text-sm hover:text-gray-700 flex items-center justify-center gap-1"
         >
-          ← Back to Restaurant Login
+          <ArrowLeft className="w-3 h-3" /> Back to Restaurant Login
         </button>
       </div>
     </div>

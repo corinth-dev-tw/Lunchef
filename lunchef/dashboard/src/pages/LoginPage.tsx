@@ -53,7 +53,7 @@ export default function LoginPage() {
         staff?: { name: string; role: string }
       }>('/api/dashboard/line-login', { access_token: accessToken })
 
-      login(data.restaurant.id, data.token, data.restaurant.name)
+      login(data.restaurant.id, data.restaurant.name)
       navigate('/orders')
     } catch (err: any) {
       console.error('LINE login error:', err)

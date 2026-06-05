@@ -1,12 +1,19 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { Home, ClipboardList } from 'lucide-react'
 
 export default function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
 
+  // Hide bottom nav on pages with their own bottom action bars
+  const hiddenPaths = ['/menu/', '/cart', '/order-confirm']
+  if (hiddenPaths.some(p => location.pathname.startsWith(p))) {
+    return null
+  }
+
   const tabs = [
-    { path: '/', label: 'Home', icon: '🏠' },
-    { path: '/orders', label: 'Orders', icon: '📋' },
+    { path: '/', label: 'Home', Icon: Home },
+    { path: '/orders', label: 'Orders', Icon: ClipboardList },
   ]
 
   const isActive = (path: string) => {
@@ -27,7 +34,7 @@ export default function BottomNav() {
                 : 'text-gray-400 hover:text-gray-600'
             }`}
           >
-            <span className="text-xl">{tab.icon}</span>
+            <tab.Icon className="w-5 h-5" />
             <span className="text-xs font-medium mt-0.5">{tab.label}</span>
           </button>
         ))}

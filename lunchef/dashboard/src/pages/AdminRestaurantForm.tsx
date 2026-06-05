@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAdminAuth } from '../contexts/AdminAuthContext'
 import { adminApi } from '../utils/adminApi'
+import { ArrowLeft, X } from 'lucide-react'
 
 interface Location {
   id: number
@@ -148,7 +149,7 @@ export default function AdminRestaurantForm() {
       <header className="bg-white shadow-sm p-4">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
           <button onClick={() => navigate('/admin/restaurants')} className="text-gray-600 hover:text-gray-800">
-            ← Back
+            <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <h1 className="text-xl font-bold text-gray-800">
             {isEdit ? 'Edit Restaurant' : 'Add Restaurant'}
@@ -314,7 +315,7 @@ export default function AdminRestaurantForm() {
                     onClick={() => removePickupTime(index)}
                     className="px-3 text-red-500 hover:text-red-700"
                   >
-                    ✕
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               ))}

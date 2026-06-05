@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../utils/api'
+import { ArrowLeft, UtensilsCrossed, Salad, Minus, Plus } from 'lucide-react'
 
 interface MenuItem {
   id: number
@@ -8,6 +9,7 @@ interface MenuItem {
   description: string
   price: number
   category: string
+  image_url?: string
 }
 
 interface CartItem extends MenuItem {
@@ -23,6 +25,24 @@ interface Restaurant {
   pickup_times: string[]
   min_order_type: string
   min_order_value: number
+  order_cutoff_time: string
+  image_url?: string
+}
+
+function formatPrice(price: number): string {
+  return `$${price.toLocaleString()}`
+}
+
+function isCutoffPassed(cutoffTime: string, orderDate: string): boolean {
+  const now = new Date()
+  const todayStr = now.toISOString().split('T')[0]
+  if (orderDate !== todayStr) return false
+
+  const [cutoffHour, cutoffMinute] = cutoffTime.split(':').map(Number)
+  const currentHour = now.getHours()
+  const currentMinute = now.getMinutes()
+
+  return currentHour > cutoffHour || (currentHour === cutoffHour && currentMinute >= cutoffMinute)
 }
 
 export default function MenuPage() {
@@ -30,9 +50,16 @@ export default function MenuPage() {
   const navigate = useNavigate()
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
-  const [cart, setCart] = useState<CartItem[]>([])
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    // Restore cart from sessionStorage on mount
+    const saved = sessionStorage.getItem('cart')
+    return saved ? JSON.parse(saved) : []
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [cutoffWarning, setCutoffWarning] = useState('')
+
+  const orderDate = sessionStorage.getItem('selectedDate') || new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     if (restaurantId) {
@@ -40,6 +67,24 @@ export default function MenuPage() {
       fetchMenuItems()
     }
   }, [restaurantId])
+
+  // Persist cart to sessionStorage whenever it changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      sessionStorage.setItem('cart', JSON.stringify(cart))
+    }
+  }, [cart])
+
+  useEffect(() => {
+    if (restaurant) {
+      const passed = isCutoffPassed(restaurant.order_cutoff_time, orderDate)
+      if (passed) {
+        setCutoffWarning(`Ordering for ${orderDate} has closed. Cutoff was ${restaurant.order_cutoff_time}.`)
+      } else {
+        setCutoffWarning('')
+      }
+    }
+  }, [restaurant, orderDate])
 
   const fetchRestaurantDetails = async () => {
     try {
@@ -65,7 +110,13 @@ export default function MenuPage() {
     }
   }
 
+  const getItemQuantity = (itemId: number): number => {
+    const item = cart.find(i => i.id === itemId)
+    return item ? item.quantity : 0
+  }
+
   const addToCart = (item: MenuItem) => {
+    if (cutoffWarning) return
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id)
       if (existing) {
@@ -79,12 +130,18 @@ export default function MenuPage() {
     setCart(prev => prev.filter(i => i.id !== itemId))
   }
 
-  const updateQuantity = (itemId: number, quantity: number) => {
+  const updateQuantity = (item: MenuItem, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(itemId)
+      removeFromCart(item.id)
       return
     }
-    setCart(prev => prev.map(i => i.id === itemId ? { ...i, quantity } : i))
+    setCart(prev => {
+      const existing = prev.find(i => i.id === item.id)
+      if (existing) {
+        return prev.map(i => i.id === item.id ? { ...i, quantity } : i)
+      }
+      return [...prev, { ...item, quantity, specialRequests: '' }]
+    })
   }
 
   const getCartTotal = () => {
@@ -124,66 +181,115 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <header className="bg-white shadow-sm p-4">
-        <button onClick={() => navigate('/restaurants')} className="text-gray-600 mb-2">
-          ← Back
-        </button>
-        <h1 className="text-xl font-bold text-gray-800">{restaurant?.name}</h1>
-        <p className="text-sm text-gray-600">{restaurant?.department_store} {restaurant?.floor}</p>
+    <div className="min-h-screen bg-gray-50 pb-28">
+      {/* Restaurant Header */}
+      <header className="bg-white shadow-sm">
+        <div className="relative h-40 bg-gray-200 overflow-hidden">
+          {restaurant?.image_url ? (
+            <img src={restaurant.image_url} alt={restaurant.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+              <UtensilsCrossed className="w-20 h-20 text-gray-300" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <button
+            onClick={() => navigate('/restaurants')}
+            className="absolute top-4 left-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-md"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          </button>
+          <div className="absolute bottom-4 left-4 text-white">
+            <h1 className="text-xl font-bold">{restaurant?.name}</h1>
+            <p className="text-sm opacity-90">{restaurant?.department_store} {restaurant?.floor}</p>
+          </div>
+        </div>
+
+        {/* Date & Cutoff Info Bar */}
+        <div className="px-4 py-2 flex items-center justify-between bg-white border-b">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">📅</span>
+            <span className="text-sm font-medium text-gray-700">
+              {orderDate === new Date().toISOString().split('T')[0] ? 'Today' : orderDate}
+            </span>
+          </div>
+          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium">
+            Order by {restaurant?.order_cutoff_time}
+          </span>
+        </div>
       </header>
 
-      <div className="p-4 space-y-3">
+      {/* Cutoff Warning */}
+      {cutoffWarning && (
+        <div className="mx-4 mt-3 bg-red-100 border border-red-300 rounded-lg p-3">
+          <p className="text-red-800 text-sm font-bold">{cutoffWarning}</p>
+        </div>
+      )}
+
+      {/* Menu Items */}
+      <div className="p-4 space-y-4">
         {menuItems.map(item => {
-          const cartItem = cart.find(i => i.id === item.id)
+          const quantity = getItemQuantity(item.id)
           return (
-            <div key={item.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="font-bold text-gray-800">{item.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                  <p className="text-lg font-bold text-green-600 mt-2">${item.price}</p>
+            <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="flex">
+                {/* Image placeholder */}
+                <div className="w-24 h-24 flex-shrink-0 bg-gray-100 flex items-center justify-center">
+                  {item.image_url ? (
+                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Salad className="w-10 h-10 text-gray-300" />
+                  )}
+                </div>
+                <div className="flex-1 p-3 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-sm">{item.name}</h3>
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{item.description}</p>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-base font-bold text-green-600">{formatPrice(item.price)}</p>
+                    {/* Always show - 0 + controls */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateQuantity(item, quantity - 1)}
+                        disabled={quantity <= 0}
+                        className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed active:bg-gray-200"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="font-bold w-6 text-center text-sm">{quantity}</span>
+                      <button
+                        onClick={() => quantity === 0 ? addToCart(item) : updateQuantity(item, quantity + 1)}
+                        disabled={!!cutoffWarning}
+                        className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold active:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {cartItem ? (
-                <div className="flex items-center mt-3 gap-3">
-                  <button
-                    onClick={() => updateQuantity(item.id, cartItem.quantity - 1)}
-                    className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold"
-                  >
-                    -
-                  </button>
-                  <span className="font-bold w-8 text-center">{cartItem.quantity}</span>
-                  <button
-                    onClick={() => updateQuantity(item.id, cartItem.quantity + 1)}
-                    className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold"
-                  >
-                    +
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => addToCart(item)}
-                  className="mt-3 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition"
-                >
-                  Add to Order
-                </button>
-              )}
             </div>
           )
         })}
       </div>
 
+      {/* Cart Bottom Bar */}
       {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-[60] px-4 py-3">
           <div className="flex justify-between items-center mb-2">
-            <span className="font-bold">{getCartItemCount()} items</span>
-            <span className="font-bold text-lg">${getCartTotal()}</span>
+            <div>
+              <span className="font-bold text-gray-800">{getCartItemCount()} items</span>
+              <span className="text-gray-400 mx-2">·</span>
+              <span className="text-xs text-gray-500">
+                {orderDate === new Date().toISOString().split('T')[0] ? 'Today' : orderDate}
+              </span>
+            </div>
+            <span className="font-bold text-lg text-green-600">{formatPrice(getCartTotal())}</span>
           </div>
           <button
             onClick={goToCart}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition"
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition active:scale-[0.98]"
           >
             Review Order
           </button>

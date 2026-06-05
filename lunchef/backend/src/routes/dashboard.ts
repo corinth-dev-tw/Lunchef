@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from '../index';
 import { dashboardAuthMiddleware } from '../middleware/auth';
 import { sendLineMessage, createStatusUpdateFlex } from '../utils/line';
+import { LineLoginSchema, UpdateOrderStatusSchema } from '../lib/validation';
 
 const app = new Hono<{
   Bindings: Env;
@@ -13,11 +14,12 @@ const VALID_STATUSES = ['pending', 'confirmed', 'preparing', 'arrived', 'complet
 // POST /api/dashboard/line-login — authenticate staff via LINE
 app.post('/line-login', async (c) => {
   try {
-    const { access_token } = await c.req.json<{ access_token?: string }>();
-
-    if (!access_token) {
-      return c.json({ error: 'access_token required' }, 400);
+    const body = await c.req.json();
+    const parsed = LineLoginSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
     }
+    const { access_token } = parsed.data;
 
     // Verify token with LINE Profile API
     const profileRes = await fetch('https://api.line.me/v2/profile', {
@@ -67,6 +69,12 @@ app.post('/line-login', async (c) => {
       `dashboard_session:${token}`,
       JSON.stringify({ restaurantId: staff.restaurant_id, staffName: staff.name, role: staff.role }),
       { expirationTtl: 86400 }
+    );
+
+    // Set HttpOnly cookie for SPA auth
+    const isProduction = c.env.ENVIRONMENT === 'production';
+    c.header('Set-Cookie',
+      `dashboard_session=${token}; HttpOnly; Secure; SameSite=None; Max-Age=86400; Path=/; ${isProduction ? 'Domain=.lunchef.antu-technology.com;' : ''}`
     );
 
     return c.json({
@@ -131,12 +139,12 @@ app.put('/orders/:id/status', async (c) => {
   try {
     const restaurantId = c.get('restaurantId');
     const id = c.req.param('id');
-    const body = await c.req.json<{ status: string; cancellation_reason?: string }>();
-    const { status, cancellation_reason } = body;
-
-    if (!VALID_STATUSES.includes(status)) {
-      return c.json({ error: 'Invalid status' }, 400);
+    const body = await c.req.json();
+    const parsed = UpdateOrderStatusSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
     }
+    const { status, cancellation_reason } = parsed.data;
 
     // Verify order belongs to this restaurant
     const orderCheck = await c.env.DB.prepare(

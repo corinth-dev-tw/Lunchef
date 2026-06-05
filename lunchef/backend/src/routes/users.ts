@@ -72,9 +72,19 @@ app.post('/login', async (c) => {
   }
 });
 
-// GET /api/users/:id — protected by LINE auth
+// GET /api/users/:id — protected by LINE auth, users can only access their own profile
 app.get('/:id', lineAuthMiddleware, async (c) => {
   const id = c.req.param('id');
+  const authUser = c.get('user');
+
+  const authedUser = await c.env.DB.prepare(
+    'SELECT id FROM users WHERE line_user_id = ? AND is_active = 1'
+  ).bind(authUser.lineUserId).first<{ id: number }>();
+
+  if (!authedUser || authedUser.id !== parseInt(id)) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
+
   const user = await c.env.DB.prepare(
     `SELECT u.*, c.name as company_name, c.tax_id
      FROM users u

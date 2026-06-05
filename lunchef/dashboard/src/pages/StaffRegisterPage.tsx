@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import liff from '@line/liff'
+import { ChefHat } from 'lucide-react'
 
 interface RegistrationStatus {
   status: string
@@ -98,7 +99,7 @@ export default function StaffRegisterPage() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">👨‍🍳</span>
+            <ChefHat className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800">Staff Registration</h1>
           <p className="text-gray-500 mt-1">Apply to become restaurant staff</p>

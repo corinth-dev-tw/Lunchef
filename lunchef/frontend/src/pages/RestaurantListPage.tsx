@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../utils/api'
+import { ArrowLeft, UtensilsCrossed } from 'lucide-react'
 
 interface Restaurant {
   id: number
@@ -10,6 +11,12 @@ interface Restaurant {
   order_cutoff_time: string
   min_order_type: string
   min_order_value: number
+  cuisine_type?: string
+  image_url?: string
+}
+
+function formatPrice(price: number): string {
+  return `$${price.toLocaleString()}`
 }
 
 export default function RestaurantListPage() {
@@ -64,39 +71,56 @@ export default function RestaurantListPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <header className="bg-white shadow-sm p-4">
-        <button onClick={() => navigate('/locations')} className="text-gray-600 mb-2">
-          ← Back
+        <button onClick={() => navigate('/locations')} className="text-gray-600 mb-2 flex items-center gap-1">
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <h1 className="text-xl font-bold text-gray-800">Available Restaurants</h1>
       </header>
 
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-4">
         {restaurants.length === 0 ? (
-          <p className="text-center text-gray-600">No restaurants available for this location.</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+            <UtensilsCrossed className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+            <p className="text-gray-600">No restaurants available for this location.</p>
+          </div>
         ) : (
           restaurants.map(restaurant => (
             <button
               key={restaurant.id}
               onClick={() => navigate(`/menu/${restaurant.id}`)}
-              className="w-full bg-white hover:bg-gray-50 text-left p-4 rounded-lg shadow-sm border border-gray-200 transition"
+              className="w-full bg-white text-left rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-green-200 transition active:scale-[0.99]"
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold text-gray-800">{restaurant.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {restaurant.department_store} {restaurant.floor}
-                  </p>
+              {/* Image */}
+              <div className="h-36 bg-gray-100 relative overflow-hidden">
+                {restaurant.image_url ? (
+                  <img src={restaurant.image_url} alt={restaurant.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                    <UtensilsCrossed className="w-16 h-16 text-gray-300" />
+                  </div>
+                )}
+                <div className="absolute top-3 right-3">
+                  <span className="text-xs bg-white/90 backdrop-blur-sm text-gray-700 px-2.5 py-1 rounded-full font-medium shadow-sm">
+                    Order by {restaurant.order_cutoff_time}
+                  </span>
                 </div>
               </div>
-              <div className="mt-2 flex gap-2">
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                  Order by {restaurant.order_cutoff_time}
-                </span>
-                <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                  Min: {restaurant.min_order_value} {restaurant.min_order_type}
-                </span>
+
+              {/* Info */}
+              <div className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800 text-base">{restaurant.name}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {restaurant.cuisine_type || 'Restaurant'} · {restaurant.department_store} {restaurant.floor}
+                    </p>
+                  </div>
+                  <span className="text-xs bg-orange-50 text-orange-700 px-2.5 py-1 rounded-full font-medium whitespace-nowrap ml-2">
+                    Min {restaurant.min_order_value} {restaurant.min_order_type}
+                  </span>
+                </div>
               </div>
             </button>
           ))

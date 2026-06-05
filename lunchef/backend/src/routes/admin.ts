@@ -1,5 +1,17 @@
 import { Hono } from 'hono';
 import type { Env } from '../index';
+import {
+  CreateRestaurantSchema,
+  UpdateRestaurantSchema,
+  CreateLocationSchema,
+  UpdateLocationSchema,
+  CreateMenuItemSchema,
+  UpdateMenuItemSchema,
+  ApproveStaffRequestSchema,
+  AddStaffSchema,
+  UpdateStaffSchema,
+  AdminLoginSchema,
+} from '../lib/validation';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -10,12 +22,22 @@ app.use('*', async (c, next) => {
     return next();
   }
 
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Try cookie first, fall back to Authorization header
+  const cookie = c.req.header('Cookie') || '';
+  const cookieMatch = cookie.match(/admin_session=([^;]+)/);
+  let token = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+
+  if (!token) {
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.slice(7);
+    }
+  }
+
+  if (!token) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
-  const token = authHeader.slice(7);
   const session = await c.env.CACHE.get(`admin_session:${token}`);
 
   if (!session) {
@@ -28,7 +50,12 @@ app.use('*', async (c, next) => {
 // POST /api/admin/login
 app.post('/login', async (c) => {
   try {
-    const { password } = await c.req.json<{ password?: string }>();
+    const body = await c.req.json();
+    const parsed = AdminLoginSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+    }
+    const { password } = parsed.data;
     const adminPassword = c.env.ADMIN_PASSWORD;
 
     if (!adminPassword) {
@@ -47,7 +74,13 @@ app.post('/login', async (c) => {
     await c.env.CACHE.put(
       `admin_session:${token}`,
       JSON.stringify({ role: 'admin' }),
-      { expirationTtl: 86400 }
+      { expirationTtl: 28800 }  // 8 hours
+    );
+
+    // Set HttpOnly cookie for SPA auth
+    const isProduction = c.env.ENVIRONMENT === 'production';
+    c.header('Set-Cookie',
+      `admin_session=${token}; HttpOnly; Secure; SameSite=None; Max-Age=28800; Path=/; ${isProduction ? 'Domain=.lunchef.antu-technology.com;' : ''}`
     );
 
     return c.json({ success: true, token });
@@ -99,15 +132,15 @@ app.get('/restaurants/:id', async (c) => {
 // POST /api/admin/restaurants
 app.post('/restaurants', async (c) => {
   try {
-    const body = await c.req.json<any>();
+    const body = await c.req.json();
+    const parsed = CreateRestaurantSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+    }
     const {
       name, cuisine_type, department_store, floor, phone, image_url,
       order_cutoff_time, min_order_type, min_order_value, location_ids, pickup_times
-    } = body;
-
-    if (!name || !department_store) {
-      return c.json({ error: 'name and department_store are required' }, 400);
-    }
+    } = parsed.data;
 
     const result = await c.env.DB.prepare(`
       INSERT INTO restaurants
@@ -150,11 +183,15 @@ app.post('/restaurants', async (c) => {
 app.put('/restaurants/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const body = await c.req.json<any>();
+    const body = await c.req.json();
+    const parsed = UpdateRestaurantSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+    }
     const {
       name, cuisine_type, department_store, floor, phone, image_url,
       order_cutoff_time, min_order_type, min_order_value, location_ids, pickup_times
-    } = body;
+    } = parsed.data;
 
     await c.env.DB.prepare(`
       UPDATE restaurants SET
@@ -224,10 +261,12 @@ app.get('/locations', async (c) => {
 // POST /api/admin/locations
 app.post('/locations', async (c) => {
   try {
-    const { name, address } = await c.req.json<{ name?: string; address?: string }>();
-    if (!name) {
-      return c.json({ error: 'name is required' }, 400);
+    const body = await c.req.json();
+    const parsed = CreateLocationSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
     }
+    const { name, address } = parsed.data;
     const result = await c.env.DB.prepare(
       'INSERT INTO locations (name, address) VALUES (?, ?)'
     ).bind(name, address || '').run();
@@ -242,10 +281,12 @@ app.post('/locations', async (c) => {
 app.put('/locations/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const { name, address } = await c.req.json<{ name?: string; address?: string }>();
-    if (!name) {
-      return c.json({ error: 'name is required' }, 400);
+    const body = await c.req.json();
+    const parsed = UpdateLocationSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
     }
+    const { name, address } = parsed.data;
     await c.env.DB.prepare(
       'UPDATE locations SET name = ?, address = ? WHERE id = ?'
     ).bind(name, address || '', id).run();
@@ -290,11 +331,12 @@ app.get('/restaurants/:id/staff', async (c) => {
 app.post('/restaurants/:id/staff', async (c) => {
   try {
     const restaurantId = c.req.param('id');
-    const { line_user_id, name, role } = await c.req.json<{ line_user_id?: string; name?: string; role?: string }>();
-
-    if (!line_user_id || !name) {
-      return c.json({ error: 'line_user_id and name are required' }, 400);
+    const body = await c.req.json();
+    const parsed = AddStaffSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
     }
+    const { line_user_id, name, role } = parsed.data;
 
     const result = await c.env.DB.prepare(
       'INSERT INTO restaurant_staff (restaurant_id, line_user_id, name, role) VALUES (?, ?, ?, ?)'
@@ -311,7 +353,12 @@ app.post('/restaurants/:id/staff', async (c) => {
 app.put('/staff/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const { name, role, is_active } = await c.req.json<{ name?: string; role?: string; is_active?: number }>();
+    const body = await c.req.json();
+    const parsed = UpdateStaffSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+    }
+    const { name, role, is_active } = parsed.data;
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -368,11 +415,12 @@ app.get('/restaurants/:id/menu', async (c) => {
 app.post('/restaurants/:id/menu', async (c) => {
   try {
     const restaurantId = c.req.param('id');
-    const { name, description, price, category, image_url } = await c.req.json<any>();
-
-    if (!name || price === undefined) {
-      return c.json({ error: 'name and price are required' }, 400);
+    const body = await c.req.json();
+    const parsed = CreateMenuItemSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
     }
+    const { name, description, price, category, image_url } = parsed.data;
 
     const result = await c.env.DB.prepare(
       'INSERT INTO menu_items (restaurant_id, name, description, price, category, image_url) VALUES (?, ?, ?, ?, ?, ?)'
@@ -389,7 +437,12 @@ app.post('/restaurants/:id/menu', async (c) => {
 app.put('/menu/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const { name, description, price, category, image_url, available } = await c.req.json<any>();
+    const body = await c.req.json();
+    const parsed = UpdateMenuItemSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+    }
+    const { name, description, price, category, image_url, available } = parsed.data;
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -548,11 +601,12 @@ app.get('/staff-requests', async (c) => {
 app.post('/staff-requests/:id/approve', async (c) => {
   try {
     const id = c.req.param('id');
-    const { restaurant_id, role } = await c.req.json<{ restaurant_id?: number; role?: string }>();
-
-    if (!restaurant_id) {
-      return c.json({ error: 'restaurant_id required' }, 400);
+    const body = await c.req.json();
+    const parsed = ApproveStaffRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
     }
+    const { restaurant_id, role } = parsed.data;
 
     const request = await c.env.DB.prepare(
       'SELECT line_user_id, name FROM staff_requests WHERE id = ?'

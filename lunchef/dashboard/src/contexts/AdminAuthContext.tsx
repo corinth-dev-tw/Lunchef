@@ -2,8 +2,7 @@ import React, { createContext, useContext, useState } from 'react'
 
 interface AdminAuthContextType {
   isAdmin: boolean
-  token: string | null
-  login: (token: string) => void
+  login: () => void
   logout: () => void
 }
 
@@ -11,26 +10,21 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(() => {
-    return !!localStorage.getItem('admin_token')
-  })
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('admin_token')
+    // Check if we have an admin session by attempting a lightweight API call
+    // The actual auth is validated server-side via HttpOnly cookie
+    return false
   })
 
-  const login = (newToken: string) => {
-    localStorage.setItem('admin_token', newToken)
-    setToken(newToken)
+  const login = () => {
     setIsAdmin(true)
   }
 
   const logout = () => {
-    localStorage.removeItem('admin_token')
-    setToken(null)
     setIsAdmin(false)
   }
 
   return (
-    <AdminAuthContext.Provider value={{ isAdmin, token, login, logout }}>
+    <AdminAuthContext.Provider value={{ isAdmin, login, logout }}>
       {children}
     </AdminAuthContext.Provider>
   )
