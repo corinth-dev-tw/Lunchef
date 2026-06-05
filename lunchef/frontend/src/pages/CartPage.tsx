@@ -125,8 +125,11 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-4">
       <header className="bg-white shadow-sm p-4">
-        <button onClick={() => navigate(-1)} className="text-gray-600 mb-2 flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Back
+        <button
+          onClick={() => restaurant ? navigate(`/menu/${restaurant.id}`) : navigate('/restaurants')}
+          className="text-gray-600 mb-2 flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to menu
         </button>
         <h1 className="text-xl font-bold text-gray-800">Review Order</h1>
         {restaurant && (

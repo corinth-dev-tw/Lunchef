@@ -34,14 +34,14 @@ export default function OrderConfirmPage() {
   let cart: any[] = []
   let restaurant: any = {}
   let pickupTime: string | null = null
-  let paymentMethod: string | null = null
+  let paymentMethod: string = 'cash'
   let orderDate: string | null = null
 
   try {
     cart = JSON.parse(sessionStorage.getItem('cart') || '[]')
     restaurant = JSON.parse(sessionStorage.getItem('restaurant') || '{}')
     pickupTime = sessionStorage.getItem('pickupTime')
-    paymentMethod = sessionStorage.getItem('paymentMethod')
+    paymentMethod = sessionStorage.getItem('paymentMethod') || 'cash'
     orderDate = sessionStorage.getItem('orderDate')
   } catch {
     // Invalid session data
@@ -109,8 +109,11 @@ export default function OrderConfirmPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-4">
       <header className="bg-white shadow-sm p-4">
-        <button onClick={() => navigate('/cart')} className="text-gray-600 mb-2 flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Back
+        <button
+          onClick={() => restaurant ? navigate(`/menu/${restaurant.id}`) : navigate('/restaurants')}
+          className="text-gray-600 mb-2 flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to menu
         </button>
         <h1 className="text-xl font-bold text-gray-800">Confirm Order</h1>
       </header>

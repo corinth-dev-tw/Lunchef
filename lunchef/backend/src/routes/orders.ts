@@ -292,25 +292,28 @@ app.post('/', lineAuthMiddleware, async (c) => {
       return c.json({ error: 'Failed to generate unique order number' }, 500);
     }
 
-    // Create order and items in a batch transaction
-    const orderStmt = c.env.DB.prepare(`
+    // Create order first, then items (reliable last_row_id retrieval)
+    const orderResult = await c.env.DB.prepare(`
       INSERT INTO orders (order_number, company_id, user_id, restaurant_id, location_id, pickup_time, order_date, total_amount, status, payment_method)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
-    `).bind(orderNumber, company_id, user_id, restaurant_id, location_id, pickup_time, order_date, totalAmount, payment_method || 'cash');
+    `).bind(orderNumber, company_id, user_id, restaurant_id, location_id, pickup_time, order_date, totalAmount, payment_method || 'cash').run();
 
-    const itemStmts = validatedItems.map((item) =>
-      c.env.DB.prepare(`
-        INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, special_requests)
-        VALUES (last_insert_rowid(), ?, ?, ?, ?)
-      `).bind(item.menu_item_id, item.quantity, item.unit_price, item.special_requests)
-    );
-
-    const batchResults = await c.env.DB.batch([orderStmt, ...itemStmts]);
-    const orderResult = batchResults[0];
     const orderId = orderResult.meta?.last_row_id;
 
     if (!orderId) {
-      return c.json({ error: 'Failed to create order' }, 500);
+      console.error('Order insert failed: no last_row_id', { orderResult });
+      return c.json({ error: 'Failed to create order: could not retrieve order ID' }, 500);
+    }
+
+    // Insert order items
+    if (validatedItems.length > 0) {
+      const itemStmts = validatedItems.map((item) =>
+        c.env.DB.prepare(`
+          INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, special_requests)
+          VALUES (?, ?, ?, ?, ?)
+        `).bind(orderId, item.menu_item_id, item.quantity, item.unit_price, item.special_requests)
+      );
+      await c.env.DB.batch(itemStmts);
     }
 
     // Send LINE Bot notification to restaurant
@@ -345,9 +348,10 @@ app.post('/', lineAuthMiddleware, async (c) => {
       total_items: totalItems,
       status: 'pending',
     }, 201);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create order error:', error);
-    return c.json({ error: 'Failed to create order' }, 500);
+    const message = error?.message || String(error);
+    return c.json({ error: 'Failed to create order', detail: message }, 500);
   }
 });
 

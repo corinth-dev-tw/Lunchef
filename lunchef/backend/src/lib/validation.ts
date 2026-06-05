@@ -52,7 +52,7 @@ export const CreateOrderSchema = z.object({
     quantity: z.number().int().min(1).max(100),
     special_requests: z.string().max(200).optional(),
   })).min(1).max(50),
-  payment_method: z.string().max(20).optional(),
+  payment_method: z.string().max(20).optional().nullable()
 });
 
 export const UpdateOrderStatusSchema = z.object({

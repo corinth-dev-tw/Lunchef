@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiff } from '../contexts/LiffContext'
 import { api } from '../utils/api'
-import { MapPin, X, Building2, SearchX, Clock, Package } from 'lucide-react'
+import { MapPin, X, Building2, SearchX, Clock, Package, Calendar } from 'lucide-react'
 import SearchBar from '../components/SearchBar'
 import { SkeletonCard } from '../components/Skeleton'
 
@@ -41,19 +41,6 @@ function getCuisineInfo(type: string) {
   return CUISINE_MAP[type] || CUISINE_MAP.asian
 }
 
-function getDateOptions() {
-  const options = []
-  const today = new Date()
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today)
-    d.setDate(today.getDate() + i)
-    const dateStr = d.toISOString().split('T')[0]
-    const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-    options.push({ value: dateStr, label })
-  }
-  return options
-}
-
 function getCuisineGradient(type: string): string {
   const map: Record<string, string> = {
     thai: 'from-orange-400 to-red-400',
@@ -69,6 +56,24 @@ function getCuisineGradient(type: string): string {
   return map[type] || 'from-gray-400 to-gray-500'
 }
 
+function getTodayStr(): string {
+  return new Date().toISOString().split('T')[0]
+}
+
+function getMaxDateStr(days = 7): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().split('T')[0]
+}
+
+function getDateLabel(dateStr: string): string {
+  const today = getTodayStr()
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+  if (dateStr === today) return 'Today'
+  if (dateStr === tomorrow) return 'Tomorrow'
+  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
   const { isLoggedIn, user, login } = useLiff()
@@ -76,15 +81,18 @@ export default function HomePage() {
   const [locations, setLocations] = useState<Location[]>([])
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
   const [showLocationPicker, setShowLocationPicker] = useState(false)
-  const [selectedDate, setSelectedDate] = useState(getDateOptions()[0].value)
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const saved = sessionStorage.getItem('selectedDate')
+    const today = getTodayStr()
+    if (saved && saved >= today) return saved
+    return today
+  })
   const [selectedCuisine, setSelectedCuisine] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [, setLoadingLocations] = useState(true)
   const [loadingRestaurants, setLoadingRestaurants] = useState(false)
   const [error, setError] = useState('')
-
-  const dateOptions = getDateOptions()
 
   // Load locations on mount
   useEffect(() => {
@@ -154,6 +162,11 @@ export default function HomePage() {
     setShowLocationPicker(false)
   }
 
+  const handleDateChange = (dateStr: string) => {
+    setSelectedDate(dateStr)
+    sessionStorage.setItem('selectedDate', dateStr)
+  }
+
   const handleRestaurantClick = (restaurantId: number) => {
     sessionStorage.setItem('selectedDate', selectedDate)
     navigate(`/menu/${restaurantId}`)
@@ -215,22 +228,26 @@ export default function HomePage() {
         {/* Search */}
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
-        {/* Date Selector */}
+        {/* Date Selector - Calendar Picker */}
         {selectedLocation && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
-            {dateOptions.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setSelectedDate(opt.value)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold transition ${
-                  selectedDate === opt.value
-                    ? 'bg-green-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 font-medium mb-1">Order for</p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  min={getTodayStr()}
+                  max={getMaxDateStr(7)}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  className="bg-transparent outline-none text-sm font-bold text-gray-800 border-b border-green-500 focus:border-green-600 pb-0.5"
+                />
+                <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                  {getDateLabel(selectedDate)}
+                </span>
+              </div>
+            </div>
           </div>
         )}
 
