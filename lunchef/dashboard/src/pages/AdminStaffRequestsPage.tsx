@@ -85,7 +85,7 @@ export default function AdminStaffRequestsPage() {
   }
 
   const handleReject = async (id: number) => {
-    if (!confirm('Reject this staff request?')) return
+    if (!confirm('確定要拒絕此申請嗎？')) return
     setProcessing(true)
     try {
       await adminApi.post(`/api/admin/staff-requests/${id}/reject`, {})
@@ -102,33 +102,33 @@ export default function AdminStaffRequestsPage() {
       <header className="bg-white shadow-sm p-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Staff Requests</h1>
-            <p className="text-sm text-gray-500">Approve or reject staff registrations</p>
+            <h1 className="text-2xl font-bold text-gray-800">職員申請</h1>
+            <p className="text-sm text-gray-500">審核職員加入申請</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => navigate('/admin/restaurants')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              Restaurants
+              餐廳管理
             </button>
             <button
               onClick={() => navigate('/admin/locations')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              Locations
+              地點管理
             </button>
             <button
               onClick={() => navigate('/admin/orders')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              Orders
+              訂單總覽
             </button>
             <button
               onClick={logout}
               className="text-gray-500 hover:text-gray-700 text-sm"
             >
-              Logout
+              登出
             </button>
           </div>
         </div>
@@ -147,9 +147,9 @@ export default function AdminStaffRequestsPage() {
           </div>
         ) : requests.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <p className="text-gray-500">No pending staff requests.</p>
+            <p className="text-gray-500">目前無待審核的職員申請。</p>
             <p className="text-sm text-gray-400 mt-2">
-              Staff can register at: <code className="bg-gray-100 px-2 py-1 rounded">/register-staff</code>
+              職員可至此頁面申請：<code className="bg-gray-100 px-2 py-1 rounded">/register-staff</code>
             </p>
           </div>
         ) : (
@@ -161,11 +161,11 @@ export default function AdminStaffRequestsPage() {
                     <p className="font-bold text-gray-800">{req.name}</p>
                     <p className="text-xs text-gray-500 font-mono">{req.line_user_id}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Requested: {new Date(req.requested_at).toLocaleString()}
+                      申請時間：{new Date(req.requested_at).toLocaleString('zh-TW')}
                     </p>
                   </div>
                   <span className="text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
-                    {req.status}
+                    {({'pending':'待審核','approved':'已核准','rejected':'已拒絕'} as Record<string,string>)[req.status] || req.status}
                   </span>
                 </div>
 
@@ -177,7 +177,7 @@ export default function AdminStaffRequestsPage() {
                         onChange={(e) => setApproveRestaurantId(e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded text-sm"
                       >
-                        <option value="">Select restaurant...</option>
+                        <option value="">選擇餐廳...</option>
                         {restaurants.map(r => (
                           <option key={r.id} value={r.id}>{r.name}</option>
                         ))}
@@ -187,8 +187,8 @@ export default function AdminStaffRequestsPage() {
                         onChange={(e) => setApproveRole(e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded text-sm"
                       >
-                        <option value="staff">Staff</option>
-                        <option value="manager">Manager</option>
+                        <option value="staff">職員</option>
+                        <option value="manager">管理者</option>
                       </select>
                     </div>
                     <div className="flex gap-2">
@@ -197,13 +197,13 @@ export default function AdminStaffRequestsPage() {
                         disabled={processing || !approveRestaurantId}
                         className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-4 rounded transition disabled:opacity-50"
                       >
-                        {processing ? 'Approving...' : 'Confirm Approve'}
+                        {processing ? '處理中...' : '確認核准'}
                       </button>
                       <button
                         onClick={() => { setApprovingId(null); setApproveRestaurantId(''); }}
                         className="text-gray-500 text-sm font-medium py-2 px-4"
                       >
-                        Cancel
+                        取消
                       </button>
                     </div>
                   </div>
@@ -213,13 +213,13 @@ export default function AdminStaffRequestsPage() {
                       onClick={() => { setApprovingId(req.id); setApproveRestaurantId(''); setApproveRole('staff'); }}
                       className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-4 rounded transition"
                     >
-                      Approve
+                      核准
                     </button>
                     <button
                       onClick={() => handleReject(req.id)}
                       className="text-red-600 hover:text-red-800 text-sm font-medium py-2 px-4"
                     >
-                      Reject
+                      拒絕
                     </button>
                   </div>
                 )}

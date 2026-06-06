@@ -35,6 +35,15 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800 border-red-300'
 }
 
+const statusLabels: Record<string, string> = {
+  pending: '待確認',
+  confirmed: '已確認',
+  preparing: '準備中',
+  arrived: '已送達',
+  completed: '已完成',
+  cancelled: '已取消',
+}
+
 const statusFlow = ['pending', 'confirmed', 'preparing', 'arrived', 'completed']
 
 export default function OrdersPage() {
@@ -109,14 +118,14 @@ export default function OrdersPage() {
       <header className="bg-white shadow-sm p-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Orders</h1>
+            <h1 className="text-2xl font-bold text-gray-800">訂單管理</h1>
             <p className="text-sm text-gray-600">{selectedDate}</p>
           </div>
           <button
             onClick={logout}
             className="text-sm text-gray-600 hover:text-gray-800"
           >
-            Logout
+            登出
           </button>
         </div>
       </header>
@@ -133,19 +142,19 @@ export default function OrdersPage() {
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-sm text-gray-600">Total Orders</p>
+              <p className="text-sm text-gray-600">總訂單數</p>
               <p className="text-2xl font-bold">{stats.total_orders || 0}</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-sm text-gray-600">Revenue</p>
+              <p className="text-sm text-gray-600">營業額</p>
               <p className="text-2xl font-bold text-green-600">${stats.total_revenue || 0}</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-sm text-gray-600">Pending</p>
+              <p className="text-sm text-gray-600">待確認</p>
               <p className="text-2xl font-bold text-yellow-600">{stats.pending_orders || 0}</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-sm text-gray-600">Completed</p>
+              <p className="text-sm text-gray-600">已完成</p>
               <p className="text-2xl font-bold text-green-600">{stats.completed_orders || 0}</p>
             </div>
           </div>
@@ -154,7 +163,7 @@ export default function OrdersPage() {
         {/* Date Selector */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Date
+            選擇日期
           </label>
           <input
             type="date"
@@ -168,7 +177,7 @@ export default function OrdersPage() {
         <div className="space-y-4">
           {orders.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-              <p className="text-gray-600">No orders for this date.</p>
+              <p className="text-gray-600">此日期無訂單。</p>
             </div>
           ) : (
             orders.map(order => {
@@ -180,11 +189,11 @@ export default function OrdersPage() {
                       <div>
                         <p className="font-bold text-lg">{order.order_number}</p>
                         <p className="text-sm text-gray-600">{order.company_name}</p>
-                        <p className="text-sm text-gray-600">Contact: {order.user_name} ({order.user_phone})</p>
+                        <p className="text-sm text-gray-600">聯絡：{order.user_name}（{order.user_phone}）</p>
                       </div>
                       <div className="text-right">
                         <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold border ${statusColors[order.status]}`}>
-                          {order.status}
+                          {statusLabels[order.status] || order.status}
                         </span>
                         <p className="text-lg font-bold mt-2">${order.total_amount}</p>
                       </div>
@@ -192,34 +201,34 @@ export default function OrdersPage() {
 
                     <div className="flex justify-between items-center">
                       <div className="text-sm text-gray-600">
-                        Pickup: {order.pickup_time}
+                        取餐時間：{order.pickup_time}
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => navigate(`/orders/${order.id}`)}
                           className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold transition"
                         >
-                          View
+                          查看
                         </button>
-                        
+
                         {nextStatus && (
                           <button
                             onClick={() => updateStatus(order.id, nextStatus)}
                             className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-bold transition"
                           >
-                            Mark {nextStatus}
+                            標記為{statusLabels[nextStatus] || nextStatus}
                           </button>
                         )}
-                        
+
                         {order.status !== 'cancelled' && order.status !== 'completed' && (
                           <button
                             onClick={() => {
-                              const reason = prompt('Cancellation reason:')
+                              const reason = prompt('取消原因：')
                               if (reason) updateStatus(order.id, 'cancelled', reason)
                             }}
                             className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-bold transition"
                           >
-                            Cancel
+                            取消
                           </button>
                         )}
                       </div>

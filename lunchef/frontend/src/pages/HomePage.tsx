@@ -25,16 +25,16 @@ interface Restaurant {
 }
 
 const CUISINE_MAP: Record<string, { label: string; color: string }> = {
-  all: { label: 'All', color: 'bg-gray-100 text-gray-800' },
-  thai: { label: 'Thai', color: 'bg-orange-100 text-orange-800' },
-  japanese: { label: 'Japanese', color: 'bg-red-100 text-red-800' },
-  korean: { label: 'Korean', color: 'bg-rose-100 text-rose-800' },
-  chinese: { label: 'Chinese', color: 'bg-yellow-100 text-yellow-800' },
-  italian: { label: 'Italian', color: 'bg-green-100 text-green-800' },
-  american: { label: 'American', color: 'bg-blue-100 text-blue-800' },
-  vietnamese: { label: 'Vietnamese', color: 'bg-emerald-100 text-emerald-800' },
-  indian: { label: 'Indian', color: 'bg-amber-100 text-amber-800' },
-  asian: { label: 'Asian', color: 'bg-purple-100 text-purple-800' },
+  all: { label: '全部', color: 'bg-gray-100 text-gray-800' },
+  thai: { label: '泰式', color: 'bg-orange-100 text-orange-800' },
+  japanese: { label: '日式', color: 'bg-red-100 text-red-800' },
+  korean: { label: '韓式', color: 'bg-rose-100 text-rose-800' },
+  chinese: { label: '中式', color: 'bg-yellow-100 text-yellow-800' },
+  italian: { label: '義式', color: 'bg-green-100 text-green-800' },
+  american: { label: '美式', color: 'bg-blue-100 text-blue-800' },
+  vietnamese: { label: '越南料理', color: 'bg-emerald-100 text-emerald-800' },
+  indian: { label: '印度料理', color: 'bg-amber-100 text-amber-800' },
+  asian: { label: '亞洲料理', color: 'bg-purple-100 text-purple-800' },
 }
 
 function getCuisineInfo(type: string) {
@@ -69,9 +69,9 @@ function getMaxDateStr(days = 7): string {
 function getDateLabel(dateStr: string): string {
   const today = getTodayStr()
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
-  if (dateStr === today) return 'Today'
-  if (dateStr === tomorrow) return 'Tomorrow'
-  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  if (dateStr === today) return '今天'
+  if (dateStr === tomorrow) return '明天'
+  return new Date(dateStr).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })
 }
 
 export default function HomePage() {
@@ -179,15 +179,15 @@ export default function HomePage() {
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Lunchef</h1>
-          <p className="text-gray-600">B2B Lunch Ordering</p>
+          <p className="text-gray-600">B2B 午餐訂餐</p>
         </div>
         <div className="w-full max-w-sm bg-white rounded-lg shadow-md p-6">
-          <p className="text-center text-gray-600 mb-6">Please login with LINE to continue</p>
+          <p className="text-center text-gray-600 mb-6">請使用 LINE 登入以繼續</p>
           <button
             onClick={login}
             className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition"
           >
-            Login with LINE
+            使用 LINE 登入
           </button>
         </div>
       </div>
@@ -217,9 +217,9 @@ export default function HomePage() {
         >
           <MapPin className="w-5 h-5 text-green-600 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-500 font-medium">Deliver to</p>
+            <p className="text-xs text-gray-500 font-medium">送達地點</p>
             <p className="text-sm font-bold text-gray-800 truncate">
-              {selectedLocation ? selectedLocation.name : 'Select your office location'}
+              {selectedLocation ? selectedLocation.name : '選擇您的辦公室'}
             </p>
           </div>
           <span className="text-gray-400 text-sm">▼</span>
@@ -233,7 +233,7 @@ export default function HomePage() {
           <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
             <Calendar className="w-5 h-5 text-green-600 flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-xs text-gray-500 font-medium mb-1">Order for</p>
+              <p className="text-xs text-gray-500 font-medium mb-1">訂餐日期</p>
               <div className="flex items-center gap-3">
                 <input
                   type="date"
@@ -287,13 +287,13 @@ export default function HomePage() {
           {!selectedLocation ? (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
               <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium mb-2">Select your office location</p>
-              <p className="text-gray-400 text-sm mb-6">We'll show restaurants that deliver to your building</p>
+              <p className="text-gray-600 font-medium mb-2">選擇您的辦公室地點</p>
+              <p className="text-gray-400 text-sm mb-6">我們將顯示送達您所在大樓的餐廳</p>
               <button
                 onClick={() => setShowLocationPicker(true)}
                 className="bg-green-500 hover:bg-green-600 text-white font-bold py-2.5 px-6 rounded-xl transition"
               >
-                Choose Location
+                選擇地點
               </button>
             </div>
           ) : loadingRestaurants ? (
@@ -306,10 +306,10 @@ export default function HomePage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
               <SearchX className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-600 font-medium mb-1">
-                {searchQuery ? 'No restaurants match your search' : 'No restaurants available'}
+                {searchQuery ? '沒有符合搜尋條件的餐廳' : '此地點暫無可選餐廳'}
               </p>
               <p className="text-gray-400 text-sm">
-                {searchQuery ? 'Try a different search term' : 'Check back later or try another location'}
+                {searchQuery ? '請嘗試其他搜尋詞' : '請稍後再試，或選擇其他地點'}
               </p>
             </div>
           ) : (
@@ -363,11 +363,11 @@ export default function HomePage() {
                     <div className="mt-3 flex gap-2 flex-wrap">
                       <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        Order by {restaurant.order_cutoff_time}
+                        截止 {restaurant.order_cutoff_time}
                       </span>
                       <span className="text-xs bg-orange-50 text-orange-700 px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1">
                         <Package className="w-3 h-3" />
-                        Min {restaurant.min_order_value} {restaurant.min_order_type}
+                        最低 {restaurant.min_order_value} {restaurant.min_order_type}
                       </span>
                     </div>
                   </div>
@@ -383,7 +383,7 @@ export default function HomePage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
           <div className="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl max-h-[70vh] flex flex-col animate-slide-up">
             <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-bold">Select Location</h2>
+              <h2 className="text-lg font-bold">選擇地點</h2>
               <button
                 onClick={() => setShowLocationPicker(false)}
                 className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"

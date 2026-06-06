@@ -25,6 +25,15 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800'
 }
 
+const statusLabels: Record<string, string> = {
+  pending: '待確認',
+  confirmed: '已確認',
+  preparing: '準備中',
+  arrived: '已送達',
+  completed: '已完成',
+  cancelled: '已取消',
+}
+
 function formatPrice(price: number): string {
   return `$${price.toLocaleString()}`
 }
@@ -72,7 +81,7 @@ export default function OrderHistoryPage() {
           onClick={fetchOrders}
           className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg"
         >
-          Retry
+          重試
         </button>
       </div>
     )
@@ -82,20 +91,20 @@ export default function OrderHistoryPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm p-4">
         <button onClick={() => navigate('/')} className="text-gray-600 mb-2 flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" /> 返回
         </button>
-        <h1 className="text-xl font-bold text-gray-800">Order History</h1>
+        <h1 className="text-xl font-bold text-gray-800">訂單紀錄</h1>
       </header>
 
       <div className="p-4 space-y-3">
         {orders.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-600">No orders yet.</p>
+            <p className="text-gray-600">尚無訂單。</p>
             <button
               onClick={() => navigate('/locations')}
               className="mt-4 bg-green-500 text-white font-bold py-2 px-4 rounded-lg"
             >
-              Order Now
+              立即訂餐
             </button>
           </div>
         ) : (
@@ -111,11 +120,11 @@ export default function OrderHistoryPage() {
                   <p className="text-sm text-gray-600">{order.restaurant_name}</p>
                 </div>
                 <span className={`px-2 py-1 rounded text-xs font-bold ${statusColors[order.status] || 'bg-gray-100'}`}>
-                  {order.status}
+                  {statusLabels[order.status] || order.status}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Pickup: {order.order_date} {order.pickup_time}</span>
+                <span className="text-gray-600">取餐：{order.order_date} {order.pickup_time}</span>
                 <span className="font-bold">{formatPrice(order.total_amount)}</span>
               </div>
             </button>

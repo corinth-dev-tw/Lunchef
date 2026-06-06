@@ -10,15 +10,15 @@ interface Location {
 }
 
 const CUISINE_OPTIONS = [
-  { value: 'thai', label: 'Thai' },
-  { value: 'japanese', label: 'Japanese' },
-  { value: 'korean', label: 'Korean' },
-  { value: 'chinese', label: 'Chinese' },
-  { value: 'italian', label: 'Italian' },
-  { value: 'american', label: 'American' },
-  { value: 'vietnamese', label: 'Vietnamese' },
-  { value: 'indian', label: 'Indian' },
-  { value: 'asian', label: 'Asian' },
+  { value: 'thai', label: '泰式' },
+  { value: 'japanese', label: '日式' },
+  { value: 'korean', label: '韓式' },
+  { value: 'chinese', label: '中式' },
+  { value: 'italian', label: '義式' },
+  { value: 'american', label: '美式' },
+  { value: 'vietnamese', label: '越南料理' },
+  { value: 'indian', label: '印度料理' },
+  { value: 'asian', label: '亞洲料理' },
 ]
 
 const DEFAULT_PICKUP_TIMES = ['11:30', '12:00', '12:30']
@@ -99,10 +99,10 @@ export default function AdminRestaurantForm() {
     try {
       if (isEdit) {
         await adminApi.put(`/api/admin/restaurants/${id}`, form)
-        setSuccess('Restaurant updated successfully')
+        setSuccess('餐廳資料已更新')
       } else {
         await adminApi.post<{ id: number }>('/api/admin/restaurants', form)
-        setSuccess('Restaurant created successfully')
+        setSuccess('餐廳已建立')
         setTimeout(() => navigate('/admin/restaurants'), 1500)
       }
     } catch (err: any) {
@@ -149,10 +149,10 @@ export default function AdminRestaurantForm() {
       <header className="bg-white shadow-sm p-4">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
           <button onClick={() => navigate('/admin/restaurants')} className="text-gray-600 hover:text-gray-800">
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" /> 返回
           </button>
           <h1 className="text-xl font-bold text-gray-800">
-            {isEdit ? 'Edit Restaurant' : 'Add Restaurant'}
+            {isEdit ? '編輯餐廳' : '新增餐廳'}
           </h1>
         </div>
       </header>
@@ -172,7 +172,7 @@ export default function AdminRestaurantForm() {
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-5">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Restaurant Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">餐廳名稱 *</label>
             <input
               type="text"
               value={form.name}
@@ -185,7 +185,7 @@ export default function AdminRestaurantForm() {
           {/* Cuisine + Department Store */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cuisine Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">料理類型</label>
               <select
                 value={form.cuisine_type}
                 onChange={e => setForm({ ...form, cuisine_type: e.target.value })}
@@ -195,7 +195,7 @@ export default function AdminRestaurantForm() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Department Store *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">百貨/大樓 *</label>
               <input
                 type="text"
                 value={form.department_store}
@@ -210,7 +210,7 @@ export default function AdminRestaurantForm() {
           {/* Floor + Phone */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Floor</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">樓層</label>
               <input
                 type="text"
                 value={form.floor}
@@ -220,7 +220,7 @@ export default function AdminRestaurantForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">電話</label>
               <input
                 type="text"
                 value={form.phone}
@@ -233,7 +233,7 @@ export default function AdminRestaurantForm() {
 
           {/* Image URL */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">圖片網址</label>
             <input
               type="url"
               value={form.image_url}
@@ -246,7 +246,7 @@ export default function AdminRestaurantForm() {
           {/* Order cutoff + min order */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Order By</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">訂單截止時間</label>
               <input
                 type="time"
                 value={form.order_cutoff_time}
@@ -255,18 +255,18 @@ export default function AdminRestaurantForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Min Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">最低訂購類型</label>
               <select
                 value={form.min_order_type}
                 onChange={e => setForm({ ...form, min_order_type: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
               >
-                <option value="items">Items</option>
-                <option value="amount">Amount ($)</option>
+                <option value="items">份數</option>
+                <option value="amount">金額（$）</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Min Value</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">最低訂購值</label>
               <input
                 type="number"
                 value={form.min_order_value}
@@ -279,7 +279,7 @@ export default function AdminRestaurantForm() {
 
           {/* Locations */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Available Locations *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">可服務地點 *</label>
             <div className="flex flex-wrap gap-2">
               {locations.map(loc => (
                 <button
@@ -300,7 +300,7 @@ export default function AdminRestaurantForm() {
 
           {/* Pickup Times */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Times</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">取餐時間</label>
             <div className="space-y-2">
               {form.pickup_times.map((time, index) => (
                 <div key={index} className="flex gap-2">
@@ -325,7 +325,7 @@ export default function AdminRestaurantForm() {
               onClick={addPickupTime}
               className="mt-2 text-sm text-green-600 hover:text-green-800 font-medium"
             >
-              + Add pickup time
+              + 新增取餐時間
             </button>
           </div>
 
@@ -336,7 +336,7 @@ export default function AdminRestaurantForm() {
               disabled={saving}
               className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition disabled:opacity-50"
             >
-              {saving ? 'Saving...' : isEdit ? 'Update Restaurant' : 'Create Restaurant'}
+              {saving ? '儲存中...' : isEdit ? '更新餐廳' : '建立餐廳'}
             </button>
           </div>
         </form>

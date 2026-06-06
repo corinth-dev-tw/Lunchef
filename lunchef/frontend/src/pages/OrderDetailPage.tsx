@@ -35,6 +35,15 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800'
 }
 
+const statusLabels: Record<string, string> = {
+  pending: '待確認',
+  confirmed: '已確認',
+  preparing: '準備中',
+  arrived: '已送達',
+  completed: '已完成',
+  cancelled: '已取消',
+}
+
 function formatPrice(price: number): string {
   return `$${price.toLocaleString()}`
 }
@@ -82,7 +91,7 @@ export default function OrderDetailPage() {
           onClick={fetchOrderDetail}
           className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg"
         >
-          Retry
+          重試
         </button>
       </div>
     )
@@ -91,7 +100,7 @@ export default function OrderDetailPage() {
   if (!order) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <p className="text-gray-600">Order not found.</p>
+        <p className="text-gray-600">找不到此訂單。</p>
       </div>
     )
   }
@@ -100,9 +109,9 @@ export default function OrderDetailPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm p-4">
         <button onClick={() => navigate('/orders')} className="text-gray-600 mb-2 flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" /> 返回
         </button>
-        <h1 className="text-xl font-bold text-gray-800">Order Details</h1>
+        <h1 className="text-xl font-bold text-gray-800">訂單詳情</h1>
       </header>
 
       <div className="p-4 space-y-4">
@@ -114,42 +123,42 @@ export default function OrderDetailPage() {
               <p className="text-sm text-gray-600">{new Date(order.created_at).toLocaleString('zh-TW')}</p>
             </div>
             <span className={`px-3 py-1 rounded text-sm font-bold ${statusColors[order.status]}`}>
-              {order.status}
+              {statusLabels[order.status] || order.status}
             </span>
           </div>
         </div>
 
         {/* Order Info */}
         <div className="bg-white rounded-lg shadow-sm p-4">
-          <h2 className="font-bold text-gray-800 mb-3">Order Information</h2>
+          <h2 className="font-bold text-gray-800 mb-3">訂單資訊</h2>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Restaurant</span>
+              <span className="text-gray-600">餐廳</span>
               <span>{order.restaurant_name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Pickup Location</span>
+              <span className="text-gray-600">取餐地點</span>
               <span>{order.location_name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Pickup Time</span>
+              <span className="text-gray-600">取餐時間</span>
               <span>{order.order_date} {order.pickup_time}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Company</span>
+              <span className="text-gray-600">公司</span>
               <span>{order.company_name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Ordered By</span>
+              <span className="text-gray-600">訂餐人</span>
               <span>{order.user_name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Payment</span>
-              <span>{order.payment_method === 'cash' ? 'Cash' : 'Credit Card'}</span>
+              <span className="text-gray-600">付款方式</span>
+              <span>{order.payment_method === 'cash' ? '取餐付現' : '現場刷卡'}</span>
             </div>
             {order.cancellation_reason && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Cancellation Reason</span>
+                <span className="text-gray-600">取消原因</span>
                 <span className="text-red-600">{order.cancellation_reason}</span>
               </div>
             )}
@@ -158,15 +167,15 @@ export default function OrderDetailPage() {
 
         {/* Items */}
         <div className="bg-white rounded-lg shadow-sm p-4">
-          <h2 className="font-bold text-gray-800 mb-3">Items</h2>
+          <h2 className="font-bold text-gray-800 mb-3">餐點</h2>
           <div className="space-y-3">
             {order.items.map(item => (
               <div key={item.id} className="flex justify-between items-start">
                 <div>
                   <p className="font-bold">{item.menu_item_name}</p>
-                  <p className="text-sm text-gray-600">Qty: {item.quantity} × {formatPrice(item.unit_price)}</p>
+                  <p className="text-sm text-gray-600">數量：{item.quantity} × {formatPrice(item.unit_price)}</p>
                   {item.special_requests && (
-                    <p className="text-sm text-orange-600 mt-1">Note: {item.special_requests}</p>
+                    <p className="text-sm text-orange-600 mt-1">備注：{item.special_requests}</p>
                   )}
                 </div>
                 <p className="font-bold">{formatPrice(item.unit_price * item.quantity)}</p>
@@ -174,7 +183,7 @@ export default function OrderDetailPage() {
             ))}
           </div>
           <div className="mt-4 pt-4 border-t flex justify-between items-center">
-            <span className="font-bold text-lg">Total</span>
+            <span className="font-bold text-lg">總計</span>
             <span className="font-bold text-xl text-green-600">{formatPrice(order.total_amount)}</span>
           </div>
         </div>
