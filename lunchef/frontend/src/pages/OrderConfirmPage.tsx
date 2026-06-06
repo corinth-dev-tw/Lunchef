@@ -110,7 +110,7 @@ export default function OrderConfirmPage() {
       <div className="flex flex-col justify-center items-center min-h-screen p-6 bg-gradient-to-b from-green-50 to-white">
         <div className="text-center">
           <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" strokeWidth={1.5} />
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">訂單已成立！🎉</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">訂單已成立！</h1>
           <p className="text-gray-500 text-sm">正在前往訂單詳情...</p>
         </div>
       </div>

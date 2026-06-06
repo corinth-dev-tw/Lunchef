@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiff } from '../contexts/LiffContext'
 import { api } from '../utils/api'
-import { MapPin, X, Building2, SearchX, Clock, Package, Calendar } from 'lucide-react'
+import { MapPin, X, Building2, SearchX, Clock, Package, Calendar, UtensilsCrossed } from 'lucide-react'
 import SearchBar from '../components/SearchBar'
 import { SkeletonCard } from '../components/Skeleton'
 import { BlurFade } from '../components/magicui/blur-fade'
@@ -28,17 +28,17 @@ interface Restaurant {
   min_order_value: number
 }
 
-const CUISINE_MAP: Record<string, { label: string; emoji: string; color: string }> = {
-  all:        { label: '全部',     emoji: '🍽',  color: 'bg-gray-100 text-gray-800' },
-  thai:       { label: '泰式',     emoji: '🍜',  color: 'bg-orange-100 text-orange-800' },
-  japanese:   { label: '日式',     emoji: '🍱',  color: 'bg-red-100 text-red-800' },
-  korean:     { label: '韓式',     emoji: '🥘',  color: 'bg-rose-100 text-rose-800' },
-  chinese:    { label: '中式',     emoji: '🥡',  color: 'bg-yellow-100 text-yellow-800' },
-  italian:    { label: '義式',     emoji: '🍕',  color: 'bg-green-100 text-green-800' },
-  american:   { label: '美式',     emoji: '🍔',  color: 'bg-blue-100 text-blue-800' },
-  vietnamese: { label: '越南料理', emoji: '🍲',  color: 'bg-emerald-100 text-emerald-800' },
-  indian:     { label: '印度料理', emoji: '🍛',  color: 'bg-amber-100 text-amber-800' },
-  asian:      { label: '亞洲料理', emoji: '🌏',  color: 'bg-purple-100 text-purple-800' },
+const CUISINE_MAP: Record<string, { label: string; color: string }> = {
+  all:        { label: '全部',     color: 'bg-gray-100 text-gray-800' },
+  thai:       { label: '泰式',     color: 'bg-orange-100 text-orange-800' },
+  japanese:   { label: '日式',     color: 'bg-red-100 text-red-800' },
+  korean:     { label: '韓式',     color: 'bg-rose-100 text-rose-800' },
+  chinese:    { label: '中式',     color: 'bg-yellow-100 text-yellow-800' },
+  italian:    { label: '義式',     color: 'bg-green-100 text-green-800' },
+  american:   { label: '美式',     color: 'bg-blue-100 text-blue-800' },
+  vietnamese: { label: '越南料理', color: 'bg-emerald-100 text-emerald-800' },
+  indian:     { label: '印度料理', color: 'bg-amber-100 text-amber-800' },
+  asian:      { label: '亞洲料理', color: 'bg-purple-100 text-purple-800' },
 }
 
 function getCuisineInfo(type: string) {
@@ -166,7 +166,7 @@ export default function HomePage() {
         <BlurFade delay={0}>
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-200">
-              <span className="text-3xl">🍽</span>
+              <UtensilsCrossed className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-1">Lunchef</h1>
             <p className="text-gray-400 text-sm">B2B 午餐訂餐</p>
@@ -260,14 +260,13 @@ export default function HomePage() {
                   <button
                     key={type}
                     onClick={() => setSelectedCuisine(type)}
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition border ${
+                    className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition border ${
                       isActive
                         ? 'bg-green-500 text-white border-green-500 shadow-sm'
                         : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                     }`}
                   >
-                    <span>{info.emoji}</span>
-                    <span>{info.label}</span>
+                    {info.label}
                   </button>
                 )
               })}
@@ -343,25 +342,25 @@ export default function HomePage() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                         <div className="absolute bottom-3 left-3">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${cuisine.color}`}>
-                            {cuisine.emoji} {cuisine.label}
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${cuisine.color}`}>
+                            {cuisine.label}
                           </span>
                         </div>
                         {countdown && (
                           <div className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
-                            ⏰ {countdown}
+                            {countdown}
                           </div>
                         )}
                       </div>
                     ) : (
                       <div className={`h-36 w-full bg-gradient-to-br ${getCuisineGradient(restaurant.cuisine_type || 'asian')} relative`}>
                         <div className="absolute inset-0 flex items-end p-3 justify-between">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-white/90 backdrop-blur text-gray-800`}>
-                            {cuisine.emoji} {cuisine.label}
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-white/90 backdrop-blur text-gray-800">
+                            {cuisine.label}
                           </span>
                           {countdown && (
                             <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
-                              ⏰ {countdown}
+                              {countdown}
                             </span>
                           )}
                         </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiff } from '../contexts/LiffContext'
-import { ArrowLeft, Minus, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, Building2, Clock, CreditCard, AlertTriangle } from 'lucide-react'
 import { BlurFade } from '../components/magicui/blur-fade'
 import { ShimmerButton } from '../components/magicui/shimmer-button'
 import { formatDate } from '../lib/dateUtils'
@@ -128,7 +128,7 @@ export default function CartPage() {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen p-6 text-center">
         <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
-          <span className="text-3xl">🛒</span>
+          <ShoppingBag className="w-8 h-8 text-green-400" />
         </div>
         <h2 className="text-lg font-bold text-gray-700 mb-2">購物車是空的</h2>
         <p className="text-gray-400 text-sm mb-6">去選幾道好料吧！</p>
@@ -162,11 +162,11 @@ export default function CartPage() {
 
       <div className="p-4 space-y-4">
 
-        {/* 🧾 Order Items */}
+        {/* Order Items */}
         <BlurFade delay={0}>
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <span>🧾</span> 餐點
+              <ShoppingBag className="w-4 h-4 text-gray-400" /> 餐點
             </h2>
             {cart.map((item) => (
               <div key={item.id} className="mb-4 pb-4 border-b border-gray-50 last:border-0 last:mb-0 last:pb-0">
@@ -212,11 +212,11 @@ export default function CartPage() {
           </div>
         </BlurFade>
 
-        {/* 🏢 Company Info */}
+        {/* Company Info */}
         <BlurFade delay={0.08}>
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <span>🏢</span> 公司資訊
+              <Building2 className="w-4 h-4 text-gray-400" /> 公司資訊
             </h2>
             <div className="space-y-3">
               <div>
@@ -248,11 +248,11 @@ export default function CartPage() {
           </div>
         </BlurFade>
 
-        {/* 🕐 Pickup Time */}
+        {/* Pickup Time */}
         <BlurFade delay={0.12}>
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <span>🕐</span> 取餐時間
+              <Clock className="w-4 h-4 text-gray-400" /> 取餐時間
             </h2>
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
               {restaurant?.pickup_times.map((time) => (
@@ -272,11 +272,11 @@ export default function CartPage() {
           </div>
         </BlurFade>
 
-        {/* 💳 Payment Method */}
+        {/* Payment Method */}
         <BlurFade delay={0.16}>
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <span>💳</span> 付款方式
+              <CreditCard className="w-4 h-4 text-gray-400" /> 付款方式
             </h2>
             <div className="space-y-2">
               {[
@@ -310,7 +310,7 @@ export default function CartPage() {
         {/* Blocker Warning */}
         {blockerMsg && (
           <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-center gap-2">
-            <span className="text-lg">⚠️</span>
+            <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />
             <p className="text-orange-800 text-sm font-medium">{blockerMsg}</p>
           </div>
         )}

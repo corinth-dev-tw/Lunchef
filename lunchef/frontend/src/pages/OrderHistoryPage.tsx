@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiff } from '../contexts/LiffContext'
 import { api } from '../utils/api'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ClipboardList } from 'lucide-react'
 import { BlurFade } from '../components/magicui/blur-fade'
 import { RippleButton } from '../components/magicui/ripple-button'
 import { AnimatedShinyText } from '../components/magicui/animated-shiny-text'
@@ -89,7 +89,7 @@ export default function OrderHistoryPage() {
           <BlurFade delay={0}>
             <div className="text-center py-16">
               <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">🍱</span>
+                <ClipboardList className="w-8 h-8 text-green-400" />
               </div>
               <p className="text-gray-600 font-medium mb-1">尚無訂單</p>
               <p className="text-gray-400 text-sm mb-6">來點好料吧！</p>

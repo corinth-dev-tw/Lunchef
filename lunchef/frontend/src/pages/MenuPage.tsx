@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../utils/api'
-import { ArrowLeft, UtensilsCrossed, Salad, Minus, Plus, Calendar } from 'lucide-react'
+import { ArrowLeft, UtensilsCrossed, Salad, Minus, Plus, Calendar, Clock } from 'lucide-react'
 import { BlurFade } from '../components/magicui/blur-fade'
 import { ShimmerButton } from '../components/magicui/shimmer-button'
 import { NumberTicker } from '../components/magicui/number-ticker'
@@ -144,7 +144,7 @@ export default function MenuPage() {
 
   const addToCart = (item: MenuItem) => {
     if (cutoffPassed) {
-      showToast('⏰ 訂單截止時間已過', 'warning')
+      showToast('訂單截止時間已過', 'warning')
       return
     }
     setCart((prev) => {
@@ -237,7 +237,7 @@ export default function MenuPage() {
             <span className="text-sm font-medium text-gray-700">{formatDate(orderDate)}</span>
           </div>
           <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${cutoffPassed ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-            {cutoffPassed ? '⏰ 截止時間已過' : `截止 ${restaurant?.order_cutoff_time}`}
+            {cutoffPassed ? '截止時間已過' : `截止 ${restaurant?.order_cutoff_time}`}
           </span>
         </div>
 
@@ -265,7 +265,7 @@ export default function MenuPage() {
       {/* Cutoff Warning */}
       {cutoffPassed && (
         <div className="mx-4 mt-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
-          <span className="text-lg">⏰</span>
+          <Clock className="w-4 h-4 text-red-500 flex-shrink-0" />
           <p className="text-red-700 text-sm font-medium">
             {orderDate} 的訂單已截止。截止時間為 {restaurant?.order_cutoff_time}。
           </p>
