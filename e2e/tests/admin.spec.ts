@@ -8,38 +8,38 @@ test.describe('Admin Panel', () => {
   test('admin login works', async ({ page }) => {
     await page.goto(`${DASHBOARD_URL}/admin`)
     await page.fill('input[type="password"]', ADMIN_PASSWORD)
-    await page.click('button:has-text("Login")')
+    await page.click('button:has-text("登入")')
     await expect(page).toHaveURL(/\/admin\/restaurants/)
-    await expect(page.locator('text=Manage Restaurants')).toBeVisible()
+    await expect(page.locator('text=餐廳管理')).toBeVisible()
   })
 
   test('analytics cards are visible after login', async ({ page }) => {
     await page.goto(`${DASHBOARD_URL}/admin`)
     await page.fill('input[type="password"]', ADMIN_PASSWORD)
-    await page.click('button:has-text("Login")')
-    await expect(page.locator('text=Total Orders Today')).toBeVisible()
-    await expect(page.locator('text=Total Revenue')).toBeVisible()
-    await expect(page.locator('text=Active Restaurants')).toBeVisible()
+    await page.click('button:has-text("登入")')
+    await expect(page.locator('text=今日訂單')).toBeVisible()
+    await expect(page.locator('text=今日營業額')).toBeVisible()
+    await expect(page.locator('text=活躍餐廳')).toBeVisible()
   })
 
-  test('locations page CRUD', async ({ page, request }) => {
+  test('locations page CRUD', async ({ page }) => {
     // Login first
     await page.goto(`${DASHBOARD_URL}/admin`)
     await page.fill('input[type="password"]', ADMIN_PASSWORD)
-    await page.click('button:has-text("Login")')
+    await page.click('button:has-text("登入")')
 
     // Navigate to locations
-    await page.click('text=Locations')
+    await page.click('text=地點管理')
     await expect(page).toHaveURL(/\/admin\/locations/)
-    await expect(page.locator('text=Manage Office Buildings')).toBeVisible()
+    await expect(page.locator('text=管理辦公大樓地點')).toBeVisible()
 
     const locName = `Test Building E2E-${Date.now()}`
 
     // Add a new location
-    await page.click('text=+ Add Location')
-    await page.fill('input[placeholder="Location name"]', locName)
-    await page.fill('input[placeholder="Address"]', '123 Test Road')
-    await page.click('button:has-text("Save")')
+    await page.click('text=+ 新增地點')
+    await page.fill('input[placeholder="地點名稱"]', locName)
+    await page.fill('input[placeholder="地址"]', '123 Test Road')
+    await page.click('button:has-text("儲存")')
 
     // Verify it appears
     await expect(page.getByRole('cell', { name: locName })).toBeVisible()
@@ -47,7 +47,7 @@ test.describe('Admin Panel', () => {
     // Delete it
     page.on('dialog', dialog => dialog.accept())
     const row = page.locator('tr', { hasText: locName })
-    await row.locator('button:has-text("Delete")').click()
+    await row.locator('button:has-text("刪除")').click()
     // Wait for item to disappear
     await expect(page.getByRole('cell', { name: locName })).not.toBeVisible({ timeout: 5000 })
   })
@@ -56,17 +56,17 @@ test.describe('Admin Panel', () => {
     // Login
     await page.goto(`${DASHBOARD_URL}/admin`)
     await page.fill('input[type="password"]', ADMIN_PASSWORD)
-    await page.click('button:has-text("Login")')
+    await page.click('button:has-text("登入")')
 
     const restName = `E2E Test Kitchen-${Date.now()}`
 
     // Add restaurant
-    await page.click('text=+ Add Restaurant')
+    await page.click('text=+ 新增餐廳')
     await page.waitForURL(/\/admin\/restaurants\/new/)
     await page.locator('input[type="text"]').first().fill(restName)
     await page.fill('input[placeholder="e.g. ATT 4 FUN"]', 'E2E Mall')
     await page.fill('input[placeholder="e.g. B1"]', '3F')
-    await page.click('text=Create Restaurant')
+    await page.click('text=建立餐廳')
 
     // Should redirect back to restaurants list
     await expect(page).toHaveURL(/\/admin\/restaurants/)
@@ -74,21 +74,21 @@ test.describe('Admin Panel', () => {
 
     // Open menu modal
     const row = page.locator('tr', { hasText: restName })
-    await row.locator('button:has-text("Menu")').click()
-    await expect(page.locator('text=Menu: ' + restName)).toBeVisible()
+    await row.locator('button:has-text("菜單")').click()
+    await expect(page.locator(`text=菜單：${restName}`)).toBeVisible()
 
     // Add menu item
-    await page.fill('input[placeholder="Item name"]', 'E2E Burger')
-    await page.fill('input[placeholder="Description"]', 'Test burger for E2E')
-    await page.fill('input[placeholder="Price"]', '250')
-    await page.click('button:has-text("Add Item")')
+    await page.fill('input[placeholder="品項名稱"]', 'E2E Burger')
+    await page.fill('input[placeholder="描述"]', 'Test burger for E2E')
+    await page.fill('input[placeholder="價格"]', '250')
+    await page.click('button:has-text("新增品項")')
     await expect(page.locator('text=E2E Burger')).toBeVisible()
 
     // Close modal and delete restaurant
     await page.locator('button:has-text("×")').first().click()
     page.on('dialog', dialog => dialog.accept())
     const restaurantRow = page.locator('tr', { hasText: restName })
-    await restaurantRow.locator('button:has-text("Delete")').click()
+    await restaurantRow.locator('button:has-text("刪除")').click()
     await expect(page.getByText(restName).first()).not.toBeVisible({ timeout: 5000 })
   })
 
@@ -110,9 +110,9 @@ test.describe('Admin Panel', () => {
   test('staff requests page loads', async ({ page }) => {
     await page.goto(`${DASHBOARD_URL}/admin`)
     await page.fill('input[type="password"]', ADMIN_PASSWORD)
-    await page.click('button:has-text("Login")')
-    await page.click('text=Staff Requests')
+    await page.click('button:has-text("登入")')
+    await page.click('text=職員申請')
     await expect(page).toHaveURL(/\/admin\/staff-requests/)
-    await expect(page.locator('text=Approve or reject staff registrations')).toBeVisible()
+    await expect(page.locator('text=審核職員加入申請')).toBeVisible()
   })
 })

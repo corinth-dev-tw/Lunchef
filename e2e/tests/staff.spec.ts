@@ -11,7 +11,7 @@ test.describe('Staff Registration Flow', () => {
     expect(res?.status()).toBeLessThan(500)
     // The page HTML should contain the app root
     const html = await page.content()
-    expect(html.includes('root') || html.includes('app') || html.includes(' Staff Registration')).toBe(true)
+    expect(html.includes('root') || html.includes('app') || html.includes('職員申請')).toBe(true)
   })
 
   test('staff status API rejects invalid token', async ({ request }) => {
@@ -37,23 +37,23 @@ test.describe('Staff Registration Flow', () => {
     // Login as admin
     await page.goto(`${DASHBOARD_URL}/admin`)
     await page.fill('input[type="password"]', ADMIN_PASSWORD)
-    await page.click('button:has-text("Login")')
+    await page.click('button:has-text("登入")')
     await expect(page).toHaveURL(/\/admin\/restaurants/)
 
     // Navigate to staff requests
-    await page.click('text=Staff Requests')
+    await page.click('text=職員申請')
     await expect(page).toHaveURL(/\/admin\/staff-requests/)
-    await expect(page.locator('text=Approve or reject staff registrations')).toBeVisible()
+    await expect(page.locator('text=審核職員加入申請')).toBeVisible()
 
-    // Wait for loading to finish (spinner disappears)
+    // Wait for loading to finish
     await page.waitForTimeout(2000)
 
-    // Should show either pending requests or empty state
+    // Should show either pending requests or empty state (in Chinese)
     const bodyText = await page.locator('body').innerText()
-    const hasContent = bodyText.includes('Pending') ||
-                       bodyText.includes('No pending') ||
-                       bodyText.includes('Approve') ||
-                       bodyText.includes('Reject')
+    const hasContent = bodyText.includes('待審核') ||
+                       bodyText.includes('目前無待審核') ||
+                       bodyText.includes('核准') ||
+                       bodyText.includes('拒絕')
     expect(hasContent).toBe(true)
   })
 

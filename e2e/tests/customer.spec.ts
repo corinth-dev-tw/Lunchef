@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test'
 const API_BASE = 'https://api.lunchef.antu-technology.com'
 
 test.describe('Customer Frontend', () => {
-  test('homepage loads with restaurant cards', async ({ page }) => {
+  test('homepage loads with login button', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('text=Lunchef')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Login with LINE' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '使用 LINE 登入' })).toBeVisible()
   })
 
   test('restaurant listing API returns data with location filter', async ({ request }) => {
@@ -39,7 +39,7 @@ test.describe('Customer Frontend', () => {
 
   test('frontend redirects to LINE login when not authenticated', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 15000 })
-    const loginBtn = page.getByRole('button', { name: 'Login with LINE' })
+    const loginBtn = page.getByRole('button', { name: '使用 LINE 登入' })
     await expect(loginBtn).toBeVisible()
     // Clicking it should redirect to LINE OAuth
     await loginBtn.click()
