@@ -46,18 +46,18 @@ export default function AdminLoginPage() {
           <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
             <Shield className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Admin Panel</h1>
-          <p className="text-gray-500 mt-1">Lunchef Management</p>
+          <h1 className="text-2xl font-bold text-gray-800">管理員後台</h1>
+          <p className="text-gray-500 mt-1">Lunchef 管理系統</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Admin Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">管理員密碼</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter admin password"
+              placeholder="輸入管理員密碼"
               className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
             />
           </div>
@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
             disabled={loading}
             className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition disabled:opacity-50"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? '登入中...' : '登入'}
           </button>
         </form>
 
@@ -81,7 +81,7 @@ export default function AdminLoginPage() {
           onClick={() => navigate('/')}
           className="w-full mt-4 text-gray-500 text-sm hover:text-gray-700 flex items-center justify-center gap-1"
         >
-          <ArrowLeft className="w-3 h-3" /> Back to Restaurant Login
+          <ArrowLeft className="w-3 h-3" /> 返回店家後台登入
         </button>
       </div>
     </div>

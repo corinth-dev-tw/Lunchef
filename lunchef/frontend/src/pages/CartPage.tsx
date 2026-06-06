@@ -41,9 +41,9 @@ function isCutoffPassed(cutoffTime: string, orderDate: string): boolean {
 function getDateLabel(dateStr: string): string {
   const today = new Date().toISOString().split('T')[0]
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
-  if (dateStr === today) return 'Today'
-  if (dateStr === tomorrow) return 'Tomorrow'
-  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  if (dateStr === today) return '今天'
+  if (dateStr === tomorrow) return '明天'
+  return new Date(dateStr).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })
 }
 
 export default function CartPage() {
@@ -129,19 +129,19 @@ export default function CartPage() {
   const getSubmitBlockerMessage = (): string => {
     if (!restaurant) return ''
     if (isCutoffPassed(restaurant.order_cutoff_time, orderDate)) {
-      return `Ordering closed for ${getDateLabel(orderDate)}. Cutoff was ${restaurant.order_cutoff_time}.`
+      return `${getDateLabel(orderDate)}的訂單已截止。截止時間為 ${restaurant.order_cutoff_time}。`
     }
     const itemCount = getCartItemCount()
     const totalAmount = getCartTotal()
     if (restaurant.min_order_type === 'items' && itemCount < restaurant.min_order_value) {
-      return `Need ${restaurant.min_order_value - itemCount} more items (min: ${restaurant.min_order_value})`
+      return `還需要 ${restaurant.min_order_value - itemCount} 個品項（最低：${restaurant.min_order_value} 份）`
     }
     if (restaurant.min_order_type === 'amount' && totalAmount < restaurant.min_order_value) {
-      return `Need ${formatPrice(restaurant.min_order_value - totalAmount)} more (min: ${formatPrice(restaurant.min_order_value)})`
+      return `還需要 ${formatPrice(restaurant.min_order_value - totalAmount)} 才能訂購（最低：${formatPrice(restaurant.min_order_value)}）`
     }
-    if (!companyName.trim()) return 'Enter company name'
-    if (!taxId.trim()) return 'Enter tax ID'
-    if (!selectedPickupTime) return 'Select a pickup time'
+    if (!companyName.trim()) return '請輸入公司名稱'
+    if (!taxId.trim()) return '請輸入統一編號'
+    if (!selectedPickupTime) return '請選擇取餐時間'
     return ''
   }
 
@@ -161,9 +161,9 @@ export default function CartPage() {
           onClick={() => restaurant ? navigate(`/menu/${restaurant.id}`) : navigate('/restaurants')}
           className="text-gray-600 mb-2 flex items-center gap-1"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to menu
+          <ArrowLeft className="w-4 h-4" /> 返回菜單
         </button>
-        <h1 className="text-xl font-bold text-gray-800">Review Order</h1>
+        <h1 className="text-xl font-bold text-gray-800">確認訂單</h1>
         {restaurant && (
           <p className="text-sm text-gray-500 mt-1">
             {restaurant.name} · {getDateLabel(orderDate)}
@@ -174,19 +174,19 @@ export default function CartPage() {
       <div className="p-4 space-y-4">
         {/* Order Items */}
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h2 className="font-bold text-gray-800 mb-3">Items</h2>
+          <h2 className="font-bold text-gray-800 mb-3">餐點</h2>
           {cart.map(item => (
             <div key={item.id} className="mb-4 pb-4 border-b last:border-0">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <p className="font-bold">{item.name}</p>
-                  <p className="text-sm text-gray-600">Qty: {item.quantity} × {formatPrice(item.price)}</p>
+                  <p className="text-sm text-gray-600">數量：{item.quantity} × {formatPrice(item.price)}</p>
                 </div>
                 <p className="font-bold">{formatPrice(item.price * item.quantity)}</p>
               </div>
               <input
                 type="text"
-                placeholder="Special requests (optional)"
+                placeholder="備注（選填）"
                 value={item.specialRequests}
                 onChange={(e) => updateSpecialRequests(item.id, e.target.value)}
                 className="mt-2 w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
@@ -195,33 +195,33 @@ export default function CartPage() {
             </div>
           ))}
           <div className="flex justify-between items-center pt-2 border-t">
-            <span className="font-bold text-lg">Total</span>
+            <span className="font-bold text-lg">總計</span>
             <span className="font-bold text-lg text-green-600">{formatPrice(getCartTotal())}</span>
           </div>
         </div>
 
         {/* Company Info */}
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h2 className="font-bold text-gray-800 mb-3">Company Info</h2>
+          <h2 className="font-bold text-gray-800 mb-3">公司資訊</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Company Name</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">公司名稱</label>
               <input
                 type="text"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="e.g. ACME Corp"
+                placeholder="例如：台積電"
                 className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 maxLength={100}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Tax ID</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">統一編號</label>
               <input
                 type="text"
                 value={taxId}
                 onChange={(e) => setTaxId(e.target.value)}
-                placeholder="e.g. 12345678"
+                placeholder="例如：12345678"
                 className="w-full p-3 border rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 maxLength={20}
               />
@@ -231,7 +231,7 @@ export default function CartPage() {
 
         {/* Pickup Time */}
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h2 className="font-bold text-gray-800 mb-3">Pickup Time</h2>
+          <h2 className="font-bold text-gray-800 mb-3">取餐時間</h2>
           <div className="grid grid-cols-3 gap-2">
             {restaurant?.pickup_times.map(time => (
               <button
@@ -251,7 +251,7 @@ export default function CartPage() {
 
         {/* Payment Method */}
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h2 className="font-bold text-gray-800 mb-3">Payment Method</h2>
+          <h2 className="font-bold text-gray-800 mb-3">付款方式</h2>
           <div className="space-y-2">
             <label className="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition">
               <input
@@ -262,7 +262,7 @@ export default function CartPage() {
                 onChange={(e) => setSelectedPaymentMethod(e.target.value)}
                 className="mr-3"
               />
-              <span>Cash on Pickup</span>
+              <span>取餐付現</span>
             </label>
             <label className="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition">
               <input
@@ -273,7 +273,7 @@ export default function CartPage() {
                 onChange={(e) => setSelectedPaymentMethod(e.target.value)}
                 className="mr-3"
               />
-              <span>Credit Card (on-site)</span>
+              <span>現場刷卡</span>
             </label>
           </div>
         </div>
@@ -295,7 +295,7 @@ export default function CartPage() {
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
         >
-          Confirm Order
+          前往確認
         </button>
       </div>
     </div>

@@ -80,7 +80,7 @@ export default function MenuPage() {
     if (restaurant) {
       const passed = isCutoffPassed(restaurant.order_cutoff_time, orderDate)
       if (passed) {
-        setCutoffWarning(`Ordering for ${orderDate} has closed. Cutoff was ${restaurant.order_cutoff_time}.`)
+        setCutoffWarning(`${orderDate} 的訂單已截止。截止時間為 ${restaurant.order_cutoff_time}。`)
       } else {
         setCutoffWarning('')
       }
@@ -176,7 +176,7 @@ export default function MenuPage() {
           onClick={() => { fetchRestaurantDetails(); fetchMenuItems(); }}
           className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg"
         >
-          Retry
+          重試
         </button>
       </div>
     )
@@ -212,11 +212,11 @@ export default function MenuPage() {
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">
-              {orderDate === new Date().toISOString().split('T')[0] ? 'Today' : orderDate}
+              {orderDate === new Date().toISOString().split('T')[0] ? '今天' : orderDate}
             </span>
           </div>
           <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium">
-            Order by {restaurant?.order_cutoff_time}
+            截止 {restaurant?.order_cutoff_time}
           </span>
         </div>
       </header>
@@ -281,10 +281,10 @@ export default function MenuPage() {
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-[60] px-4 py-3 safe-area-pb">
           <div className="flex justify-between items-center mb-2">
             <div>
-              <span className="font-bold text-gray-800">{getCartItemCount()} items</span>
+              <span className="font-bold text-gray-800">{getCartItemCount()} 份</span>
               <span className="text-gray-400 mx-2">·</span>
               <span className="text-xs text-gray-500">
-                {orderDate === new Date().toISOString().split('T')[0] ? 'Today' : orderDate}
+                {orderDate === new Date().toISOString().split('T')[0] ? '今天' : orderDate}
               </span>
             </div>
             <span className="font-bold text-lg text-green-600">{formatPrice(getCartTotal())}</span>
@@ -293,7 +293,7 @@ export default function MenuPage() {
             onClick={goToCart}
             className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition active:scale-[0.98]"
           >
-            Review Order
+            查看購物車
           </button>
         </div>
       )}

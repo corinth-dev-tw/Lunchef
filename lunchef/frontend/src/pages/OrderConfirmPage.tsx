@@ -20,9 +20,9 @@ function formatPrice(price: number): string {
 function getDateLabel(dateStr: string): string {
   const today = new Date().toISOString().split('T')[0]
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
-  if (dateStr === today) return 'Today'
-  if (dateStr === tomorrow) return 'Tomorrow'
-  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  if (dateStr === today) return '今天'
+  if (dateStr === tomorrow) return '明天'
+  return new Date(dateStr).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })
 }
 
 export default function OrderConfirmPage() {
@@ -57,17 +57,17 @@ export default function OrderConfirmPage() {
 
   const submitOrder = async () => {
     if (!user) {
-      setError('Please login first')
+      setError('請先登入')
       return
     }
 
     if (!pickupTime || !orderDate || cart.length === 0) {
-      setError('Missing order information. Please go back and try again.')
+      setError('訂單資訊不完整，請返回重試。')
       return
     }
 
     if (!companyName.trim() || !taxId.trim()) {
-      setError('Company name and tax ID are required')
+      setError('請填寫公司名稱與統一編號')
       return
     }
 
@@ -126,45 +126,45 @@ export default function OrderConfirmPage() {
           onClick={() => restaurant ? navigate(`/menu/${restaurant.id}`) : navigate('/restaurants')}
           className="text-gray-600 mb-2 flex items-center gap-1"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to menu
+          <ArrowLeft className="w-4 h-4" /> 返回菜單
         </button>
-        <h1 className="text-xl font-bold text-gray-800">Confirm Order</h1>
+        <h1 className="text-xl font-bold text-gray-800">確認訂單</h1>
       </header>
 
       <div className="p-4 space-y-4">
         {/* Order Summary */}
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h2 className="font-bold text-gray-800 mb-3">Order Summary</h2>
+          <h2 className="font-bold text-gray-800 mb-3">訂單摘要</h2>
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Restaurant</span>
+              <span className="text-gray-600">餐廳</span>
               <span className="font-medium">{restaurant?.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Date</span>
+              <span className="text-gray-600">日期</span>
               <span className="font-medium">{orderDate ? getDateLabel(orderDate) : '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Pickup Time</span>
+              <span className="text-gray-600">取餐時間</span>
               <span className="font-medium">{pickupTime}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Payment</span>
-              <span className="font-medium">{paymentMethod === 'cash' ? 'Cash on Pickup' : 'Credit Card (on-site)'}</span>
+              <span className="text-gray-600">付款方式</span>
+              <span className="font-medium">{paymentMethod === 'cash' ? '取餐付現' : '現場刷卡'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Company</span>
+              <span className="text-gray-600">公司</span>
               <span className="font-medium">{companyName || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Tax ID</span>
+              <span className="text-gray-600">統一編號</span>
               <span className="font-medium">{taxId || '-'}</span>
             </div>
           </div>
 
           <div className="mt-4 pt-4 border-t">
-            <h3 className="font-bold mb-2">Items</h3>
+            <h3 className="font-bold mb-2">餐點</h3>
             {cart.map((item: any) => (
               <div key={item.id} className="flex justify-between py-1 text-sm">
                 <span>{item.name} × {item.quantity}</span>
@@ -174,7 +174,7 @@ export default function OrderConfirmPage() {
           </div>
 
           <div className="mt-4 pt-4 border-t flex justify-between items-center">
-            <span className="font-bold text-lg">Total</span>
+            <span className="font-bold text-lg">總計</span>
             <span className="font-bold text-xl text-green-600">{formatPrice(getCartTotal())}</span>
           </div>
         </div>
@@ -192,7 +192,7 @@ export default function OrderConfirmPage() {
           disabled={loading}
           className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50 active:scale-[0.98]"
         >
-          {loading ? 'Processing...' : 'Place Order'}
+          {loading ? '處理中...' : '確認下單'}
         </button>
       </div>
     </div>

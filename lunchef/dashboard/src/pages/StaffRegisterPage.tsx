@@ -27,7 +27,7 @@ export default function StaffRegisterPage() {
       })
       .catch((err) => {
         console.error('LIFF init failed:', err)
-        setError('LINE SDK initialization failed')
+        setError('LINE SDK 初始化失敗')
       })
   }, [])
 
@@ -60,7 +60,7 @@ export default function StaffRegisterPage() {
 
     const accessToken = liff.getAccessToken()
     if (!accessToken) {
-      setError('No LINE access token')
+      setError('無法取得 LINE 存取權杖')
       return
     }
 
@@ -101,8 +101,8 @@ export default function StaffRegisterPage() {
           <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
             <ChefHat className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Staff Registration</h1>
-          <p className="text-gray-500 mt-1">Apply to become restaurant staff</p>
+          <h1 className="text-2xl font-bold text-gray-800">職員申請</h1>
+          <p className="text-gray-500 mt-1">申請成為餐廳職員</p>
         </div>
 
         {error && (
@@ -114,10 +114,10 @@ export default function StaffRegisterPage() {
         {status && (
           <div className={`border rounded-xl p-4 mb-4 ${getStatusColor(status.status)}`}>
             <p className="font-bold text-lg">{status.name}</p>
-            <p className="text-sm mt-1">Status: <span className="font-semibold capitalize">{status.status}</span></p>
+            <p className="text-sm mt-1">狀態：<span className="font-semibold">{status.status === 'approved' ? '已核准' : status.status === 'pending' ? '審核中' : status.status === 'rejected' ? '已拒絕' : status.status}</span></p>
             <p className="text-sm mt-1">{status.message}</p>
             {status.restaurant_name && (
-              <p className="text-sm mt-1">Assigned to: {status.restaurant_name} ({status.role})</p>
+              <p className="text-sm mt-1">已分配至：{status.restaurant_name}（{status.role}）</p>
             )}
           </div>
         )}
@@ -127,7 +127,7 @@ export default function StaffRegisterPage() {
             href="/"
             className="block w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl text-center transition"
           >
-            Go to Dashboard
+            前往後台
           </a>
         )}
 
@@ -140,14 +140,14 @@ export default function StaffRegisterPage() {
             {registering ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Registering...
+                申請中...
               </>
             ) : (
               <>
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M21.5 11.5c0-4.15-4.47-7.5-10-7.5S1.5 7.35 1.5 11.5c0 3.72 3.33 6.83 7.82 7.42.3.06.8.19.92.44.1.2.07.52.03.73l-.13.77c-.04.22-.18.87.76.47.93-.4 5.02-2.96 7.11-5.06a9.23 9.23 0 001.49-1.87c.65-1.1.99-2.15.99-2.96z"/>
                 </svg>
-                {liff.isLoggedIn() ? 'Register as Staff' : 'Login with LINE to Register'}
+                {liff.isLoggedIn() ? '申請成為職員' : '使用 LINE 登入以申請'}
               </>
             )}
           </button>
@@ -155,7 +155,7 @@ export default function StaffRegisterPage() {
 
         {status?.status === 'pending' && (
           <p className="text-sm text-gray-500 text-center mt-4">
-            Please wait for your admin to approve your request.
+            請等待管理員審核您的申請。
           </p>
         )}
       </div>

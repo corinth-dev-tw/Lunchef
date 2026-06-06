@@ -37,8 +37,8 @@ export default function BottomNav() {
   }
 
   const tabs = [
-    { path: '/', label: 'Home', Icon: Home },
-    { path: '/orders', label: 'Orders', Icon: ClipboardList },
+    { path: '/', label: '首頁', Icon: Home },
+    { path: '/orders', label: '訂單', Icon: ClipboardList },
   ]
 
   const isActive = (path: string) => {

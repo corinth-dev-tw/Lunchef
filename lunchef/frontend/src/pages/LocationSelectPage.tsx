@@ -54,7 +54,7 @@ export default function LocationSelectPage() {
           onClick={fetchLocations}
           className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg"
         >
-          Retry
+          重試
         </button>
       </div>
     )
@@ -64,9 +64,9 @@ export default function LocationSelectPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm p-4">
         <button onClick={() => navigate('/')} className="text-gray-600 mb-2 flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" /> 返回
         </button>
-        <h1 className="text-xl font-bold text-gray-800">Select Your Office</h1>
+        <h1 className="text-xl font-bold text-gray-800">選擇辦公室地點</h1>
       </header>
 
       <div className="p-4 space-y-3">
