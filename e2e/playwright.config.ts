@@ -4,8 +4,8 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  retries: 1,
+  workers: 3,
   reporter: [['html', { outputFolder: 'playwright-report' }]],
   use: {
     baseURL: 'https://app.lunchef.antu-technology.com',
