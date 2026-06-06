@@ -7,7 +7,7 @@ interface SearchBarProps {
   placeholder?: string
 }
 
-export default function SearchBar({ value, onChange, placeholder = 'Search restaurants...' }: SearchBarProps) {
+export default function SearchBar({ value, onChange, placeholder = '搜尋餐廳...' }: SearchBarProps) {
   const [focused, setFocused] = useState(false)
 
   return (
