@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from '../i18n'
 import { Search, X } from 'lucide-react'
 
 interface SearchBarProps {
@@ -7,7 +8,8 @@ interface SearchBarProps {
   placeholder?: string
 }
 
-export default function SearchBar({ value, onChange, placeholder = '搜尋餐廳...' }: SearchBarProps) {
+export default function SearchBar({ value, onChange, placeholder }: SearchBarProps) {
+  const { t } = useTranslation()
   const [focused, setFocused] = useState(false)
 
   return (
@@ -23,7 +25,7 @@ export default function SearchBar({ value, onChange, placeholder = '搜尋餐廳
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder={placeholder}
+        placeholder={placeholder || t('search.placeholder')}
         className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400"
       />
       {value && (

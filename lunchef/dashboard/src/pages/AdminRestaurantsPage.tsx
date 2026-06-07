@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../contexts/AdminAuthContext'
+import { useTranslation } from '../i18n'
 import { adminApi } from '../utils/adminApi'
 
 interface Restaurant {
@@ -43,19 +44,13 @@ interface AnalyticsSummary {
   active_restaurants: number
 }
 
-const CUISINE_LABELS: Record<string, string> = {
-  thai: '泰式', japanese: '日式', korean: '韓式',
-  chinese: '中式', italian: '義式', american: '美式',
-  vietnamese: '越南料理', indian: '印度料理', asian: '亞洲料理',
-}
-
 export default function AdminRestaurantsPage() {
   const navigate = useNavigate()
-  const { token, logout } = useAdminAuth()
+  const { t } = useTranslation()
+  const { logout } = useAdminAuth()
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  // Staff modal state
   const [staffModalOpen, setStaffModalOpen] = useState(false)
   const [staffModalRestaurant, setStaffModalRestaurant] = useState<Restaurant | null>(null)
   const [staffList, setStaffList] = useState<StaffMember[]>([])
@@ -64,7 +59,6 @@ export default function AdminRestaurantsPage() {
   const [newStaffLineId, setNewStaffLineId] = useState('')
   const [newStaffRole, setNewStaffRole] = useState('staff')
 
-  // Menu modal state
   const [menuModalOpen, setMenuModalOpen] = useState(false)
   const [menuModalRestaurant, setMenuModalRestaurant] = useState<Restaurant | null>(null)
   const [menuList, setMenuList] = useState<MenuItem[]>([])
@@ -72,16 +66,12 @@ export default function AdminRestaurantsPage() {
   const [menuForm, setMenuForm] = useState({ name: '', description: '', price: '', category: 'main', image_url: '' })
   const [editingMenuId, setEditingMenuId] = useState<number | null>(null)
 
-  // Analytics
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null)
 
   useEffect(() => {
-    if (token) {
-      adminApi.setToken(token)
-      fetchRestaurants()
-      fetchAnalytics()
-    }
-  }, [token])
+    fetchRestaurants()
+    fetchAnalytics()
+  }, [])
 
   const fetchAnalytics = async () => {
     try {
@@ -107,7 +97,7 @@ export default function AdminRestaurantsPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this restaurant?')) return
+    if (!confirm(t('admin.restaurants.confirmDelete'))) return
     try {
       await adminApi.delete(`/api/admin/restaurants/${id}`)
       fetchRestaurants()
@@ -144,7 +134,6 @@ export default function AdminRestaurantsPage() {
       setNewStaffName('')
       setNewStaffLineId('')
       setNewStaffRole('staff')
-      // Refresh staff list
       const data = await adminApi.get<StaffMember[]>(`/api/admin/restaurants/${staffModalRestaurant.id}/staff`)
       setStaffList(data)
     } catch (err: any) {
@@ -153,7 +142,7 @@ export default function AdminRestaurantsPage() {
   }
 
   const removeStaff = async (staffId: number) => {
-    if (!confirm('Remove this staff member?')) return
+    if (!confirm(t('admin.staff.removeConfirm'))) return
     try {
       await adminApi.delete(`/api/admin/staff/${staffId}`)
       if (staffModalRestaurant) {
@@ -229,7 +218,7 @@ export default function AdminRestaurantsPage() {
   }
 
   const deleteMenuItem = async (itemId: number) => {
-    if (!confirm('Delete this menu item?')) return
+    if (!confirm(t('admin.menu.deleteConfirm') || 'Delete this menu item?')) return
     try {
       await adminApi.delete(`/api/admin/menu/${itemId}`)
       if (menuModalRestaurant) {
@@ -246,39 +235,39 @@ export default function AdminRestaurantsPage() {
       <header className="bg-white shadow-sm p-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">管理員後台</h1>
-            <p className="text-sm text-gray-500">餐廳管理</p>
+            <h1 className="text-2xl font-bold text-gray-800">{t('admin.panelTitle')}</h1>
+            <p className="text-sm text-gray-500">{t('admin.restaurants.title')}</p>
           </div>
           <div className="flex gap-3 items-center">
             <button
               onClick={() => navigate('/admin/locations')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              地點管理
+              {t('nav.locations')}
             </button>
             <button
               onClick={() => navigate('/admin/orders')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              訂單總覽
+              {t('nav.orders')}
             </button>
             <button
               onClick={() => navigate('/admin/staff-requests')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              職員申請
+              {t('nav.staffRequests')}
             </button>
             <button
               onClick={() => navigate('/admin/restaurants/new')}
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition"
             >
-              + 新增餐廳
+              + {t('admin.restaurants.addRestaurant')}
             </button>
             <button
               onClick={logout}
               className="text-gray-500 hover:text-gray-700 text-sm"
             >
-              登出
+              {t('auth.logout')}
             </button>
           </div>
         </div>
@@ -295,15 +284,15 @@ export default function AdminRestaurantsPage() {
         {analytics && (
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div className="bg-white rounded-xl shadow-sm p-4">
-              <p className="text-sm text-gray-500">今日訂單</p>
+              <p className="text-sm text-gray-500">{t('admin.analytics.totalOrdersToday')}</p>
               <p className="text-2xl font-bold text-gray-800">{analytics.total_orders}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4">
-              <p className="text-sm text-gray-500">今日營業額</p>
-              <p className="text-2xl font-bold text-gray-800">${analytics.total_revenue.toLocaleString()}</p>
+              <p className="text-sm text-gray-500">{t('admin.analytics.totalRevenue')}</p>
+              <p className="text-2xl font-bold text-gray-800">{t('admin.orders.totalRevenue')} {analytics.total_revenue.toLocaleString()}</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-4">
-              <p className="text-sm text-gray-500">活躍餐廳</p>
+              <p className="text-sm text-gray-500">{t('admin.analytics.activeRestaurants')}</p>
               <p className="text-2xl font-bold text-gray-800">{analytics.active_restaurants}</p>
             </div>
           </div>
@@ -315,12 +304,12 @@ export default function AdminRestaurantsPage() {
           </div>
         ) : restaurants.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <p className="text-gray-500">尚無餐廳。</p>
+            <p className="text-gray-500">{t('admin.restaurants.noRestaurants')}</p>
             <button
               onClick={() => navigate('/admin/restaurants/new')}
               className="mt-4 bg-green-500 text-white font-bold py-2 px-4 rounded-lg"
             >
-              新增第一間餐廳
+              {t('admin.restaurants.addFirst')}
             </button>
           </div>
         ) : (
@@ -328,11 +317,11 @@ export default function AdminRestaurantsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">名稱</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">料理類型</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">地點</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">截止時間</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">操作</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.restaurants.table.name')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.restaurants.table.cuisine')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.restaurants.table.location')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.restaurants.table.cutoff')}</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -343,7 +332,7 @@ export default function AdminRestaurantsPage() {
                     </td>
                     <td className="py-3 px-4">
                       <span className="text-sm text-gray-600">
-                        {CUISINE_LABELS[r.cuisine_type] || r.cuisine_type}
+                        {t(`cuisines.${r.cuisine_type}`) || r.cuisine_type}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -358,25 +347,25 @@ export default function AdminRestaurantsPage() {
                           onClick={() => navigate(`/admin/restaurants/${r.id}/edit`)}
                           className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                         >
-                          編輯
+                          {t('common.edit')}
                         </button>
                         <button
                           onClick={() => openMenuModal(r)}
                           className="text-sm text-orange-600 hover:text-orange-800 font-medium"
                         >
-                          菜單
+                          {t('admin.restaurants.menu')}
                         </button>
                         <button
                           onClick={() => openStaffModal(r)}
                           className="text-sm text-purple-600 hover:text-purple-800 font-medium"
                         >
-                          職員
+                          {t('admin.restaurants.staff')}
                         </button>
                         <button
                           onClick={() => handleDelete(r.id)}
                           className="text-sm text-red-600 hover:text-red-800 font-medium"
                         >
-                          刪除
+                          {t('common.delete')}
                         </button>
                       </div>
                     </td>
@@ -394,7 +383,7 @@ export default function AdminRestaurantsPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col">
             <div className="p-4 border-b flex justify-between items-center">
               <h2 className="text-lg font-bold text-gray-800">
-                職員：{staffModalRestaurant.name}
+                {t('admin.staff.title', { name: staffModalRestaurant.name })}
               </h2>
               <button
                 onClick={() => setStaffModalOpen(false)}
@@ -405,20 +394,19 @@ export default function AdminRestaurantsPage() {
             </div>
 
             <div className="p-4 overflow-auto flex-1">
-              {/* Add staff form */}
               <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">新增職員</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.staff.addStaffMember')}</h3>
                 <div className="grid grid-cols-1 gap-2">
                   <input
                     type="text"
-                    placeholder="姓名（例如：王小明）"
+                    placeholder={t('admin.staff.namePlaceholder')}
                     value={newStaffName}
                     onChange={(e) => setNewStaffName(e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded text-sm"
                   />
                   <input
                     type="text"
-                    placeholder="LINE User ID"
+                    placeholder={t('admin.staff.lineUserIdPlaceholder')}
                     value={newStaffLineId}
                     onChange={(e) => setNewStaffLineId(e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded text-sm"
@@ -428,26 +416,25 @@ export default function AdminRestaurantsPage() {
                     onChange={(e) => setNewStaffRole(e.target.value)}
                     className="w-full p-2 border border-gray-300 rounded text-sm"
                   >
-                    <option value="staff">職員</option>
-                    <option value="manager">管理者</option>
+                    <option value="staff">{t('admin.staffRequests.roles.staff')}</option>
+                    <option value="manager">{t('admin.staffRequests.roles.manager')}</option>
                   </select>
                   <button
                     onClick={addStaff}
                     disabled={!newStaffName.trim() || !newStaffLineId.trim()}
                     className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-4 rounded transition disabled:opacity-50"
                   >
-                    新增職員
+                    {t('admin.staff.addStaff')}
                   </button>
                 </div>
               </div>
 
-              {/* Staff list */}
               {staffLoading ? (
                 <div className="flex justify-center py-4">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
                 </div>
               ) : staffList.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">尚無職員。</p>
+                <p className="text-gray-500 text-sm text-center py-4">{t('admin.staff.noStaff')}</p>
               ) : (
                 <div className="space-y-2">
                   {staffList.map(s => (
@@ -455,13 +442,13 @@ export default function AdminRestaurantsPage() {
                       <div>
                         <p className="font-medium text-sm text-gray-800">{s.name}</p>
                         <p className="text-xs text-gray-500">{s.line_user_id}</p>
-                        <p className="text-xs text-gray-400">{s.role === 'manager' ? '管理者' : '職員'} · {s.is_active ? '啟用中' : '已停用'}</p>
+                        <p className="text-xs text-gray-400">{s.role} · {s.is_active ? t('admin.staff.active') : t('admin.staff.inactive')}</p>
                       </div>
                       <button
                         onClick={() => removeStaff(s.id)}
                         className="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1"
                       >
-                        移除
+                        {t('admin.staff.remove')}
                       </button>
                     </div>
                   ))}
@@ -478,7 +465,7 @@ export default function AdminRestaurantsPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col">
             <div className="p-4 border-b flex justify-between items-center">
               <h2 className="text-lg font-bold text-gray-800">
-                菜單：{menuModalRestaurant.name}
+                {t('admin.menu.title', { name: menuModalRestaurant.name })}
               </h2>
               <button
                 onClick={() => { setMenuModalOpen(false); setEditingMenuId(null); }}
@@ -489,22 +476,21 @@ export default function AdminRestaurantsPage() {
             </div>
 
             <div className="p-4 overflow-auto flex-1">
-              {/* Add/Edit menu form */}
               <div className="bg-gray-50 rounded-lg p-3 mb-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                  {editingMenuId ? '編輯菜單品項' : '新增菜單品項'}
+                  {editingMenuId ? t('admin.menu.editItem') : t('admin.menu.addItem')}
                 </h3>
                 <div className="grid grid-cols-1 gap-2">
                   <input
                     type="text"
-                    placeholder="品項名稱"
+                    placeholder={t('admin.menu.placeholder.itemName')}
                     value={menuForm.name}
                     onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })}
                     className="w-full p-2 border border-gray-300 rounded text-sm"
                   />
                   <input
                     type="text"
-                    placeholder="描述"
+                    placeholder={t('admin.menu.placeholder.description')}
                     value={menuForm.description}
                     onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })}
                     className="w-full p-2 border border-gray-300 rounded text-sm"
@@ -512,7 +498,7 @@ export default function AdminRestaurantsPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       type="number"
-                      placeholder="價格"
+                      placeholder={t('admin.menu.placeholder.price')}
                       value={menuForm.price}
                       onChange={(e) => setMenuForm({ ...menuForm, price: e.target.value })}
                       className="w-full p-2 border border-gray-300 rounded text-sm"
@@ -522,15 +508,15 @@ export default function AdminRestaurantsPage() {
                       onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value })}
                       className="w-full p-2 border border-gray-300 rounded text-sm"
                     >
-                      <option value="main">主餐</option>
-                      <option value="side">副餐</option>
-                      <option value="drink">飲料</option>
-                      <option value="dessert">甜點</option>
+                      <option value="main">{t('admin.menu.categories.main')}</option>
+                      <option value="side">{t('admin.menu.categories.side')}</option>
+                      <option value="drink">{t('admin.menu.categories.drink')}</option>
+                      <option value="dessert">{t('admin.menu.categories.dessert')}</option>
                     </select>
                   </div>
                   <input
                     type="url"
-                    placeholder="圖片網址（選填）"
+                    placeholder={t('admin.menu.placeholder.imageUrl')}
                     value={menuForm.image_url}
                     onChange={(e) => setMenuForm({ ...menuForm, image_url: e.target.value })}
                     className="w-full p-2 border border-gray-300 rounded text-sm"
@@ -541,27 +527,26 @@ export default function AdminRestaurantsPage() {
                       disabled={!menuForm.name.trim() || !menuForm.price}
                       className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-4 rounded transition disabled:opacity-50"
                     >
-                      {editingMenuId ? '更新' : '新增品項'}
+                      {editingMenuId ? t('common.save') : t('admin.menu.addItem')}
                     </button>
                     {editingMenuId && (
                       <button
                         onClick={() => { setEditingMenuId(null); setMenuForm({ name: '', description: '', price: '', category: 'main', image_url: '' }); }}
                         className="text-gray-500 text-sm font-medium py-2 px-4"
                       >
-                        取消
+                        {t('common.cancel')}
                       </button>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Menu list */}
               {menuLoading ? (
                 <div className="flex justify-center py-4">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
                 </div>
               ) : menuList.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">尚無菜單品項。</p>
+                <p className="text-gray-500 text-sm text-center py-4">{t('admin.menu.noItems')}</p>
               ) : (
                 <div className="space-y-2">
                   {menuList.map(item => (
@@ -569,8 +554,8 @@ export default function AdminRestaurantsPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-sm text-gray-800">{item.name}</p>
-                          <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">{item.category}</span>
-                          {!item.available && <span className="text-xs bg-red-200 text-red-700 px-2 py-0.5 rounded">已下架</span>}
+                          <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">{t(`admin.menu.categories.${item.category}`)}</span>
+                          {!item.available && <span className="text-xs bg-red-200 text-red-700 px-2 py-0.5 rounded">{t('admin.menu.unavailable')}</span>}
                         </div>
                         <p className="text-xs text-gray-500">{item.description}</p>
                         <p className="text-sm font-bold text-green-600">${item.price}</p>
@@ -580,19 +565,19 @@ export default function AdminRestaurantsPage() {
                           onClick={() => toggleMenuAvailable(item)}
                           className="text-xs text-gray-500 hover:text-gray-700 font-medium px-2 py-1"
                         >
-                          {item.available ? '下架' : '上架'}
+                          {item.available ? t('admin.menu.hide') : t('admin.menu.show')}
                         </button>
                         <button
                           onClick={() => startEditMenu(item)}
                           className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1"
                         >
-                          編輯
+                          {t('common.edit')}
                         </button>
                         <button
                           onClick={() => deleteMenuItem(item.id)}
                           className="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1"
                         >
-                          刪除
+                          {t('common.delete')}
                         </button>
                       </div>
                     </div>

@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiff } from '../contexts/LiffContext'
+import { useTranslation } from '../i18n'
+import { formatTwd } from '../i18n/formatters'
 import { api } from '../utils/api'
-import { ArrowLeft, ClipboardList } from 'lucide-react'
-import { BlurFade } from '../components/magicui/blur-fade'
-import { RippleButton } from '../components/magicui/ripple-button'
-import { AnimatedShinyText } from '../components/magicui/animated-shiny-text'
-import { OrderStatusStepper } from '../components/OrderStatusStepper'
-import { formatDateTime } from '../lib/dateUtils'
+import { ArrowLeft } from 'lucide-react'
 
 interface Order {
   id: number
@@ -21,21 +18,27 @@ interface Order {
   created_at: string
 }
 
-function formatPrice(price: number): string {
-  return `$${price.toLocaleString()}`
+const statusColors: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  confirmed: 'bg-blue-100 text-blue-800',
+  preparing: 'bg-orange-100 text-orange-800',
+  arrived: 'bg-purple-100 text-purple-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800'
 }
-
-const STATUS_ACTIVE = new Set(['pending', 'confirmed', 'preparing'])
 
 export default function OrderHistoryPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { user } = useLiff()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (user) fetchOrders()
+    if (user) {
+      fetchOrders()
+    }
   }, [user])
 
   const fetchOrders = async () => {
@@ -44,9 +47,9 @@ export default function OrderHistoryPage() {
       setError('')
       const data = await api.get<Order[]>(`/api/orders?company_id=${user?.company_id}`)
       setOrders(data)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '載入失敗'
-      setError(msg)
+    } catch (err: any) {
+      console.error('Error fetching orders:', err)
+      setError(err.message || t('errors.generic'))
     } finally {
       setLoading(false)
     }
@@ -55,7 +58,7 @@ export default function OrderHistoryPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
       </div>
     )
   }
@@ -64,81 +67,57 @@ export default function OrderHistoryPage() {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen p-4">
         <p className="text-red-600 mb-4">{error}</p>
-        <RippleButton
+        <button
           onClick={fetchOrders}
-          className="border-green-500 bg-green-500 text-white font-bold"
-          rippleColor="#ffffff"
+          className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg"
         >
-          重試
-        </RippleButton>
+          {t('common.retry')}
+        </button>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white/90 backdrop-blur-sm shadow-sm p-4 sticky top-0 z-40">
+      <header className="bg-white shadow-sm p-4">
         <button onClick={() => navigate('/')} className="text-gray-600 mb-2 flex items-center gap-1">
-          <ArrowLeft className="w-4 h-4" /> 返回
+          <ArrowLeft className="w-4 h-4" /> {t('common.back')}
         </button>
-        <h1 className="text-xl font-bold text-gray-800">訂單紀錄</h1>
+        <h1 className="text-xl font-bold text-gray-800">{t('order.title')}</h1>
       </header>
 
       <div className="p-4 space-y-3">
         {orders.length === 0 ? (
-          <BlurFade delay={0}>
-            <div className="text-center py-16">
-              <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ClipboardList className="w-8 h-8 text-green-400" />
-              </div>
-              <p className="text-gray-600 font-medium mb-1">尚無訂單</p>
-              <p className="text-gray-400 text-sm mb-6">來點好料吧！</p>
-              <RippleButton
-                onClick={() => navigate('/')}
-                className="border-green-500 bg-green-500 text-white font-bold px-6 py-2.5 text-sm"
-                rippleColor="#ffffff"
-              >
-                立即訂餐
-              </RippleButton>
-            </div>
-          </BlurFade>
+          <div className="text-center py-8">
+            <p className="text-gray-600">{t('order.noOrders')}</p>
+            <button
+              onClick={() => navigate('/locations')}
+              className="mt-4 bg-green-500 text-white font-bold py-2 px-4 rounded-lg"
+            >
+              {t('home.selectLocation')}
+            </button>
+          </div>
         ) : (
-          orders.map((order, index) => (
-            <BlurFade key={order.id} delay={index * 0.05}>
-              <button
-                onClick={() => navigate(`/orders/${order.id}`)}
-                className="w-full bg-white text-left p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99]"
-              >
-                {/* Top row */}
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <p className="font-bold text-gray-800">{order.order_number}</p>
-                    <p className="text-sm text-gray-500 mt-0.5">{order.restaurant_name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(order.created_at)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-gray-800">{formatPrice(order.total_amount)}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      取餐：{order.order_date} {order.pickup_time}
-                    </p>
-                  </div>
+          orders.map(order => (
+            <button
+              key={order.id}
+              onClick={() => navigate(`/orders/${order.id}`)}
+              className="w-full bg-white text-left p-4 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="font-bold text-gray-800">{order.order_number}</p>
+                  <p className="text-sm text-gray-600">{order.restaurant_name}</p>
                 </div>
-
-                {/* Status stepper */}
-                <div className="mb-3">
-                  {STATUS_ACTIVE.has(order.status) ? (
-                    <AnimatedShinyText className="text-xs font-medium text-green-600 mb-1.5 block">
-                      {order.status === 'pending' ? '等待餐廳確認中...' :
-                       order.status === 'confirmed' ? '已確認，準備中...' : '餐點準備中...'}
-                    </AnimatedShinyText>
-                  ) : null}
-                  <OrderStatusStepper status={order.status} compact />
-                </div>
-
-                {/* Location */}
-                <p className="text-xs text-gray-400">{order.location_name}</p>
-              </button>
-            </BlurFade>
+                <span className={`px-2 py-1 rounded text-xs font-bold ${statusColors[order.status] || 'bg-gray-100'}`}>
+                  {t(`order.statuses.${order.status}` as any) || order.status}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">{t('orderConfirm.pickupTime')}: {order.order_date} {order.pickup_time}</span>
+                <span className="font-bold">{formatTwd(order.total_amount)}</span>
+              </div>
+            </button>
           ))
         )}
       </div>

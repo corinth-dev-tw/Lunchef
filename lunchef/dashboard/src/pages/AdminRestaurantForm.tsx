@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useAdminAuth } from '../contexts/AdminAuthContext'
+import { useTranslation } from '../i18n'
 import { adminApi } from '../utils/adminApi'
 import { ArrowLeft, X } from 'lucide-react'
 
@@ -9,24 +9,12 @@ interface Location {
   name: string
 }
 
-const CUISINE_OPTIONS = [
-  { value: 'thai', label: '泰式' },
-  { value: 'japanese', label: '日式' },
-  { value: 'korean', label: '韓式' },
-  { value: 'chinese', label: '中式' },
-  { value: 'italian', label: '義式' },
-  { value: 'american', label: '美式' },
-  { value: 'vietnamese', label: '越南料理' },
-  { value: 'indian', label: '印度料理' },
-  { value: 'asian', label: '亞洲料理' },
-]
-
 const DEFAULT_PICKUP_TIMES = ['11:30', '12:00', '12:30']
 
 export default function AdminRestaurantForm() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { id } = useParams()
-  const { token } = useAdminAuth()
   const isEdit = !!id
 
   const [locations, setLocations] = useState<Location[]>([])
@@ -50,12 +38,9 @@ export default function AdminRestaurantForm() {
   })
 
   useEffect(() => {
-    if (token) {
-      adminApi.setToken(token)
-      fetchLocations()
-      if (isEdit) fetchRestaurant()
-    }
-  }, [token])
+    fetchLocations()
+    if (isEdit) fetchRestaurant()
+  }, [])
 
   const fetchLocations = async () => {
     try {
@@ -99,10 +84,10 @@ export default function AdminRestaurantForm() {
     try {
       if (isEdit) {
         await adminApi.put(`/api/admin/restaurants/${id}`, form)
-        setSuccess('餐廳資料已更新')
+        setSuccess(t('common.success'))
       } else {
         await adminApi.post<{ id: number }>('/api/admin/restaurants', form)
-        setSuccess('餐廳已建立')
+        setSuccess(t('common.success'))
         setTimeout(() => navigate('/admin/restaurants'), 1500)
       }
     } catch (err: any) {
@@ -148,11 +133,11 @@ export default function AdminRestaurantForm() {
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm p-4">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
-          <button onClick={() => navigate('/admin/restaurants')} className="text-gray-600 hover:text-gray-800">
-            <ArrowLeft className="w-4 h-4" /> 返回
+          <button onClick={() => navigate('/admin/restaurants')} className="text-gray-600 hover:text-gray-800 flex items-center gap-1">
+            <ArrowLeft className="w-4 h-4" /> {t('common.back')}
           </button>
           <h1 className="text-xl font-bold text-gray-800">
-            {isEdit ? '編輯餐廳' : '新增餐廳'}
+            {isEdit ? t('admin.restaurants.form.edit') : t('admin.restaurants.form.add')}
           </h1>
         </div>
       </header>
@@ -170,9 +155,8 @@ export default function AdminRestaurantForm() {
         )}
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-5">
-          {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">餐廳名稱 *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.restaurants.form.restaurantName')}</label>
             <input
               type="text"
               value={form.name}
@@ -182,71 +166,69 @@ export default function AdminRestaurantForm() {
             />
           </div>
 
-          {/* Cuisine + Department Store */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">料理類型</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.restaurants.form.cuisineType')}</label>
               <select
                 value={form.cuisine_type}
                 onChange={e => setForm({ ...form, cuisine_type: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
               >
-                {CUISINE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {(['thai','japanese','korean','chinese','italian','american','vietnamese','indian','asian'] as const).map(c => (
+                  <option key={c} value={c}>{t(`cuisines.${c}`)}</option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">百貨/大樓 *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.restaurants.form.departmentStore')}</label>
               <input
                 type="text"
                 value={form.department_store}
                 onChange={e => setForm({ ...form, department_store: e.target.value })}
                 required
-                placeholder="e.g. ATT 4 FUN"
+                placeholder={t('admin.restaurants.form.departmentStorePlaceholder')}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
               />
             </div>
           </div>
 
-          {/* Floor + Phone */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">樓層</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.restaurants.form.floor')}</label>
               <input
                 type="text"
                 value={form.floor}
                 onChange={e => setForm({ ...form, floor: e.target.value })}
-                placeholder="e.g. B1"
+                placeholder={t('admin.restaurants.form.floorPlaceholder')}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">電話</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.restaurants.form.phone')}</label>
               <input
                 type="text"
                 value={form.phone}
                 onChange={e => setForm({ ...form, phone: e.target.value })}
-                placeholder="02-2345-6789"
+                placeholder={t('admin.restaurants.form.phonePlaceholder')}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
               />
             </div>
           </div>
 
-          {/* Image URL */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">圖片網址</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.restaurants.form.imageUrl')}</label>
             <input
               type="url"
               value={form.image_url}
               onChange={e => setForm({ ...form, image_url: e.target.value })}
-              placeholder="https://..."
+              placeholder={t('admin.restaurants.form.imageUrlPlaceholder')}
               className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
             />
           </div>
 
-          {/* Order cutoff + min order */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">訂單截止時間</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.restaurants.form.orderBy')}</label>
               <input
                 type="time"
                 value={form.order_cutoff_time}
@@ -255,18 +237,18 @@ export default function AdminRestaurantForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">最低訂購類型</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.restaurants.form.minType')}</label>
               <select
                 value={form.min_order_type}
                 onChange={e => setForm({ ...form, min_order_type: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
               >
-                <option value="items">份數</option>
-                <option value="amount">金額（$）</option>
+                <option value="items">{t('admin.restaurants.form.minTypeItems')}</option>
+                <option value="amount">{t('admin.restaurants.form.minTypeAmount')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">最低訂購值</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.restaurants.form.minValue')}</label>
               <input
                 type="number"
                 value={form.min_order_value}
@@ -277,9 +259,8 @@ export default function AdminRestaurantForm() {
             </div>
           </div>
 
-          {/* Locations */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">可服務地點 *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin.restaurants.form.availableLocations')}</label>
             <div className="flex flex-wrap gap-2">
               {locations.map(loc => (
                 <button
@@ -298,9 +279,8 @@ export default function AdminRestaurantForm() {
             </div>
           </div>
 
-          {/* Pickup Times */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">取餐時間</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin.restaurants.form.pickupTimes')}</label>
             <div className="space-y-2">
               {form.pickup_times.map((time, index) => (
                 <div key={index} className="flex gap-2">
@@ -325,18 +305,17 @@ export default function AdminRestaurantForm() {
               onClick={addPickupTime}
               className="mt-2 text-sm text-green-600 hover:text-green-800 font-medium"
             >
-              + 新增取餐時間
+              {t('admin.restaurants.form.addPickupTime')}
             </button>
           </div>
 
-          {/* Submit */}
           <div className="pt-4 border-t">
             <button
               type="submit"
               disabled={saving}
               className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition disabled:opacity-50"
             >
-              {saving ? '儲存中...' : isEdit ? '更新餐廳' : '建立餐廳'}
+              {saving ? t('common.saving') : isEdit ? t('admin.restaurants.form.update') : t('admin.restaurants.form.create')}
             </button>
           </div>
         </form>

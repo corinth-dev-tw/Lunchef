@@ -1,16 +1,18 @@
 import { Hono } from 'hono';
 import type { Env } from '../index';
 import { LineLoginSchema } from '../lib/validation';
+import { t, getLocale } from '../i18n';
 
 const app = new Hono<{ Bindings: Env }>();
 
 // POST /api/staff/register — self-register via LINE
 app.post('/register', async (c) => {
+  const locale = getLocale(c);
   try {
     const body = await c.req.json();
     const parsed = LineLoginSchema.safeParse(body);
     if (!parsed.success) {
-      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+      return c.json({ error: t('errors.invalidInput', locale), details: parsed.error.issues }, 400);
     }
     const { access_token } = parsed.data;
 
@@ -20,7 +22,7 @@ app.post('/register', async (c) => {
     });
 
     if (!profileRes.ok) {
-      return c.json({ error: 'Invalid LINE token' }, 401);
+      return c.json({ error: t('errors.invalidLineToken', locale) }, 401);
     }
 
     const profile = (await profileRes.json()) as { userId: string; displayName: string };
@@ -37,7 +39,7 @@ app.post('/register', async (c) => {
         success: true,
         status: existing.status,
         name,
-        message: statusMessage(existing.status),
+        message: statusMessage(existing.status, locale),
       });
     }
 
@@ -49,21 +51,22 @@ app.post('/register', async (c) => {
       success: true,
       status: 'pending',
       name,
-      message: statusMessage('pending'),
+      message: statusMessage('pending', locale),
     });
   } catch (error) {
     console.error('Staff register error:', error);
-    return c.json({ error: 'Registration failed' }, 500);
+    return c.json({ error: t('errors.registrationFailed', getLocale(c)) }, 500);
   }
 });
 
 // POST /api/staff/status — check current registration status
 app.post('/status', async (c) => {
+  const locale = getLocale(c);
   try {
     const body = await c.req.json();
     const parsed = LineLoginSchema.safeParse(body);
     if (!parsed.success) {
-      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+      return c.json({ error: t('errors.invalidInput', locale), details: parsed.error.issues }, 400);
     }
     const { access_token } = parsed.data;
 
@@ -72,7 +75,7 @@ app.post('/status', async (c) => {
     });
 
     if (!profileRes.ok) {
-      return c.json({ error: 'Invalid LINE token' }, 401);
+      return c.json({ error: t('errors.invalidLineToken', locale) }, 401);
     }
 
     const profile = (await profileRes.json()) as { userId: string; displayName: string };
@@ -92,7 +95,7 @@ app.post('/status', async (c) => {
     }>();
 
     if (!request) {
-      return c.json({ status: 'not_registered', name: profile.displayName, message: 'Not registered. Please visit /register-staff' });
+      return c.json({ status: 'not_registered', name: profile.displayName, message: t('staff.notRegistered', locale) });
     }
 
     return c.json({
@@ -100,20 +103,20 @@ app.post('/status', async (c) => {
       name: request.name,
       restaurant_name: request.restaurant_name,
       role: request.role,
-      message: statusMessage(request.status),
+      message: statusMessage(request.status, locale),
     });
   } catch (error) {
     console.error('Staff status error:', error);
-    return c.json({ error: 'Status check failed' }, 500);
+    return c.json({ error: t('errors.statusCheckFailed', locale) }, 500);
   }
 });
 
-function statusMessage(status: string): string {
+function statusMessage(status: string, locale: ReturnType<typeof getLocale>): string {
   switch (status) {
-    case 'pending': return 'Your request is pending admin approval. Please wait.';
-    case 'approved': return 'You are approved! You can now log into the dashboard.';
-    case 'rejected': return 'Your registration was rejected.';
-    default: return 'Unknown status.';
+    case 'pending': return t('staff.statusPending', locale);
+    case 'approved': return t('staff.statusApproved', locale);
+    case 'rejected': return t('staff.statusRejected', locale);
+    default: return t('staff.statusUnknown', locale);
   }
 }
 
