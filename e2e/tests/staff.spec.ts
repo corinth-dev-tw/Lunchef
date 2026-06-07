@@ -4,6 +4,21 @@ const API_BASE = 'https://api.lunchef.antu-technology.com'
 const DASHBOARD_URL = 'https://dashboard.lunchef.antu-technology.com'
 const ADMIN_PASSWORD = 'lunchef-admin-2026'
 
+async function getAdminToken(request: Parameters<Parameters<typeof test>[1]>[0]['request']): Promise<string> {
+  const attempt = async () => request.post(`${API_BASE}/api/admin/login`, {
+    data: { password: ADMIN_PASSWORD },
+    headers: { 'Content-Type': 'application/json' },
+  })
+  let res = await attempt()
+  if (res.status() === 429) {
+    await new Promise(r => setTimeout(r, 3000))
+    res = await attempt()
+  }
+  expect(res.status()).toBe(200)
+  const { token } = await res.json()
+  return token as string
+}
+
 test.describe('Staff Registration Flow', () => {
   test('staff register page responds', async ({ page }) => {
     // LIFF init hangs in non-LINE browsers; just verify the URL loads
@@ -58,13 +73,7 @@ test.describe('Staff Registration Flow', () => {
   })
 
   test('admin can access staff request endpoints', async ({ request }) => {
-    // Admin login to get token
-    const loginRes = await request.post(`${API_BASE}/api/admin/login`, {
-      data: { password: ADMIN_PASSWORD },
-      headers: { 'Content-Type': 'application/json' },
-    })
-    expect(loginRes.status()).toBe(200)
-    const { token } = await loginRes.json()
+    const token = await getAdminToken(request)
 
     // Get staff requests
     const res = await request.get(`${API_BASE}/api/admin/staff-requests`, {

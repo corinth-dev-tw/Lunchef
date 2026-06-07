@@ -5,6 +5,22 @@ const FRONTEND_URL = 'https://app.lunchef.antu-technology.com'
 const DASHBOARD_URL = 'https://dashboard.lunchef.antu-technology.com'
 const ADMIN_PASSWORD = 'lunchef-admin-2026'
 
+/** Obtain an admin token, retrying once on 429 after a short back-off. */
+async function getAdminToken(request: Parameters<Parameters<typeof test>[1]>[0]['request']): Promise<string> {
+  const attempt = async () => request.post(`${API_BASE}/api/admin/login`, {
+    data: { password: ADMIN_PASSWORD },
+    headers: { 'Content-Type': 'application/json' },
+  })
+  let res = await attempt()
+  if (res.status() === 429) {
+    await new Promise(r => setTimeout(r, 3000))
+    res = await attempt()
+  }
+  expect(res.status()).toBe(200)
+  const { token } = await res.json()
+  return token as string
+}
+
 test.describe('Order Placement End-to-End', () => {
   test('customer can browse locations and restaurants', async ({ page }) => {
     // Frontend may be slow to load; use domcontentloaded
@@ -83,13 +99,7 @@ test.describe('Order Placement End-to-End', () => {
   })
 
   test('admin can view global orders with filters', async ({ request }) => {
-    // Admin login
-    const loginRes = await request.post(`${API_BASE}/api/admin/login`, {
-      data: { password: ADMIN_PASSWORD },
-      headers: { 'Content-Type': 'application/json' },
-    })
-    expect(loginRes.status()).toBe(200)
-    const { token } = await loginRes.json()
+    const token = await getAdminToken(request)
 
     // Get orders with date filter
     const ordersRes = await request.get(`${API_BASE}/api/admin/orders?date=2026-06-04`, {
@@ -107,12 +117,7 @@ test.describe('Order Placement End-to-End', () => {
   })
 
   test('admin analytics summary returns data', async ({ request }) => {
-    const loginRes = await request.post(`${API_BASE}/api/admin/login`, {
-      data: { password: ADMIN_PASSWORD },
-      headers: { 'Content-Type': 'application/json' },
-    })
-    expect(loginRes.status()).toBe(200)
-    const { token } = await loginRes.json()
+    const token = await getAdminToken(request)
 
     const res = await request.get(`${API_BASE}/api/admin/analytics/summary?date=2026-06-04`, {
       headers: { Authorization: `Bearer ${token}` },
