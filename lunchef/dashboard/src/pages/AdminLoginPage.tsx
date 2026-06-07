@@ -49,7 +49,7 @@ export default function AdminLoginPage() {
             <Shield className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800">{t('auth.adminPanel')}</h1>
-          <p className="text-gray-500 mt-1">Lunchef Management</p>
+          <p className="text-gray-500 mt-1">{t('login.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

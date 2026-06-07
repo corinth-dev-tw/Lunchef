@@ -202,8 +202,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <header className="bg-white shadow-sm px-4 py-3 sticky top-0 z-40">
-        <div className="flex justify-between items-center">
+      <header className="bg-white shadow-sm px-4 pt-3 pb-2 sticky top-0 z-40">
+        <div className="flex justify-between items-center mb-2">
           <div>
             <h1 className="text-lg font-bold text-gray-800">{t('app.name')}</h1>
             <p className="text-xs text-gray-500">{user?.company_name}</p>
@@ -212,6 +212,7 @@ export default function HomePage() {
             <p className="text-sm font-medium text-gray-700">{user?.name}</p>
           </div>
         </div>
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
       </header>
 
       <div className="px-4 pt-4 space-y-4">
@@ -229,9 +230,6 @@ export default function HomePage() {
           </div>
           <span className="text-gray-400 text-sm">▼</span>
         </button>
-
-        {/* Search */}
-        <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
         {/* Date Selector - Calendar Picker */}
         {selectedLocation && (
