@@ -13,17 +13,27 @@ export default function AdminLoginPage() {
   const [liffReady, setLiffReady] = useState(false)
   const [loggingIn, setLoggingIn] = useState(false)
 
+  // Only auto-redirect if we have a token AND isAdmin is confirmed.
+  // We do NOT auto-redirect on first mount to avoid a redirect loop when
+  // the stored token has expired (adminApi clears it on 401).
   useEffect(() => {
-    if (isAdmin) {
-      navigate('/admin/restaurants')
-      return
-    }
+    if (!isAdmin) return
 
+    // Confirm the stored token actually exists before redirecting
+    const token = localStorage.getItem('admin_token')
+    if (token) {
+      navigate('/admin/restaurants')
+    }
+  }, [isAdmin, navigate])
+
+  useEffect(() => {
     const liffId = import.meta.env.VITE_DASHBOARD_LIFF_ID || import.meta.env.VITE_LIFF_ID || '2010266926-wB4JsxVI'
     liff.init({ liffId, withLoginOnExternalBrowser: true })
       .then(() => {
         setLiffReady(true)
-        if (liff.isLoggedIn()) {
+        // Auto-trigger login only if we do NOT already have a valid session
+        const hasToken = !!localStorage.getItem('admin_token')
+        if (liff.isLoggedIn() && !hasToken) {
           handleLiffLogin()
         }
       })
@@ -31,7 +41,7 @@ export default function AdminLoginPage() {
         console.error('LIFF init failed:', err)
         setError(t('errors.generic'))
       })
-  }, [isAdmin])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLiffLogin = async () => {
     if (!liff.isLoggedIn()) return
@@ -55,6 +65,10 @@ export default function AdminLoginPage() {
       const data = await res.json() as { success?: boolean; token?: string; error?: string; name?: string }
       if (!res.ok) {
         throw new Error(data.error || t('errors.unauthorized'))
+      }
+
+      if (!data.token) {
+        throw new Error('No session token received')
       }
 
       login(data.token)

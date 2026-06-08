@@ -5,7 +5,7 @@ const TOKEN_KEY = 'admin_token'
 interface AdminAuthContextType {
   isAdmin: boolean
   token: string | null
-  login: (token?: string) => void
+  login: (token: string) => void
   logout: () => void
 }
 
@@ -24,11 +24,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const login = (newToken?: string) => {
-    if (newToken) {
-      localStorage.setItem(TOKEN_KEY, newToken)
-      setToken(newToken)
-    }
+  const login = (newToken: string) => {
+    localStorage.setItem(TOKEN_KEY, newToken)
+    setToken(newToken)
     setIsAdmin(true)
   }
 

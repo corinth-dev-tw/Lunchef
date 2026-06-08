@@ -17,7 +17,8 @@ class AdminApiClient {
     })
 
     if (response.status === 401) {
-      // Token expired or invalid — redirect to login
+      // Clear the stale token so the login page doesn't auto-restore it
+      localStorage.removeItem('admin_token')
       window.location.href = '/admin'
       throw new Error('Session expired. Please log in again.')
     }
