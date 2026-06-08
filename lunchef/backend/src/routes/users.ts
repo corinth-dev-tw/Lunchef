@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from '../index';
 import type { LineUser } from '../index';
 import { lineAuthMiddleware } from '../middleware/auth';
+import { t, getLocale } from '../i18n';
 
 const app = new Hono<{
   Bindings: Env;
@@ -17,9 +18,10 @@ interface LoginBody {
 // https://developers.line.biz/en/reference/line-login/#get-user-profile
 app.post('/login', async (c) => {
   try {
+    const locale = getLocale(c);
     const authHeader = c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return c.json({ error: 'Missing Authorization header' }, 401);
+      return c.json({ error: t('errors.missingAuthHeader', locale) }, 401);
     }
 
     const accessToken = authHeader.slice(7);
@@ -31,7 +33,7 @@ app.post('/login', async (c) => {
     });
 
     if (!profileRes.ok) {
-      return c.json({ error: 'Invalid or expired LINE token' }, 401);
+      return c.json({ error: t('errors.invalidLineToken', locale) }, 401);
     }
 
     const profile = (await profileRes.json()) as {
@@ -65,10 +67,10 @@ app.post('/login', async (c) => {
     }
 
     // User not found — require admin registration for B2B onboarding
-    return c.json({ error: 'Account not registered. Please contact your company admin to set up access.' }, 403);
+    return c.json({ error: t('errors.accountNotRegistered', locale) }, 403);
   } catch (error) {
     console.error('Login error:', error);
-    return c.json({ error: 'Login failed' }, 500);
+    return c.json({ error: t('errors.loginFailed', getLocale(c)) }, 500);
   }
 });
 
@@ -76,13 +78,14 @@ app.post('/login', async (c) => {
 app.get('/:id', lineAuthMiddleware, async (c) => {
   const id = c.req.param('id');
   const authUser = c.get('user');
+  const locale = getLocale(c);
 
   const authedUser = await c.env.DB.prepare(
     'SELECT id FROM users WHERE line_user_id = ? AND is_active = 1'
   ).bind(authUser.lineUserId).first<{ id: number }>();
 
   if (!authedUser || authedUser.id !== parseInt(id)) {
-    return c.json({ error: 'Forbidden' }, 403);
+    return c.json({ error: t('errors.forbidden', locale) }, 403);
   }
 
   const user = await c.env.DB.prepare(
@@ -92,7 +95,7 @@ app.get('/:id', lineAuthMiddleware, async (c) => {
      WHERE u.id = ?`
   ).bind(id).first();
 
-  if (!user) return c.json({ error: 'User not found' }, 404);
+  if (!user) return c.json({ error: t('errors.userNotFound', locale) }, 404);
   return c.json(user);
 });
 

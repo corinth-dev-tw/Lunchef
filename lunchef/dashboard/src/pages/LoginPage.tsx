@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useTranslation } from '../i18n'
 import { api } from '../utils/api'
 import liff from '@line/liff'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { isLoggedIn, login } = useAuth()
   const [error, setError] = useState('')
   const [liffReady, setLiffReady] = useState(false)
@@ -31,9 +33,9 @@ export default function LoginPage() {
       })
       .catch((err) => {
         console.error('LIFF init failed:', err)
-        setError('LINE SDK initialization failed')
+        setError(t('errors.generic'))
       })
-  }, [isLoggedIn])
+  }, [isLoggedIn, t])
 
   const handleLiffLogin = async () => {
     if (!liff.isLoggedIn()) return
@@ -57,7 +59,7 @@ export default function LoginPage() {
       navigate('/orders')
     } catch (err: any) {
       console.error('LINE login error:', err)
-      setError(err.message || 'LINE login failed. Please make sure you have been added to restaurant staff.')
+      setError(err.message || t('errors.generic'))
       // Logout from LIFF so they can retry
       liff.logout()
     } finally {
@@ -78,8 +80,8 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">Lunchef Dashboard</h1>
-          <p className="text-gray-600 mt-2">Restaurant Management</p>
+          <h1 className="text-2xl font-bold text-gray-800">{t('login.title')}</h1>
+          <p className="text-gray-600 mt-2">{t('login.subtitle')}</p>
         </div>
 
         <div className="space-y-4">
@@ -91,14 +93,14 @@ export default function LoginPage() {
             {loggingIn ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                登入中...
+                {t('auth.loggingIn')}
               </>
             ) : (
               <>
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M21.5 11.5c0-4.15-4.47-7.5-10-7.5S1.5 7.35 1.5 11.5c0 3.72 3.33 6.83 7.82 7.42.3.06.8.19.92.44.1.2.07.52.03.73l-.13.77c-.04.22-.18.87.76.47.93-.4 5.02-2.96 7.11-5.06a9.23 9.23 0 001.49-1.87c.65-1.1.99-2.15.99-2.96z"/>
                 </svg>
-                使用 LINE 登入
+                {t('auth.loginWithLine')}
               </>
             )}
           </button>
@@ -110,7 +112,7 @@ export default function LoginPage() {
           )}
 
           <p className="text-xs text-gray-500 text-center mt-4">
-            請確保您的 LINE 帳號已被管理員加入店家職員名單
+            {t('login.lineNote')}
           </p>
         </div>
       </div>

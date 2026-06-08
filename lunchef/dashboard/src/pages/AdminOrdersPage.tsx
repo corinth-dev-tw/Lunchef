@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../contexts/AdminAuthContext'
+import { useTranslation, formatTwd } from '../i18n'
 import { adminApi } from '../utils/adminApi'
 
 interface Order {
@@ -33,7 +34,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminOrdersPage() {
   const navigate = useNavigate()
-  const { token, logout } = useAdminAuth()
+  const { t } = useTranslation()
+  const { logout } = useAdminAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,12 +46,9 @@ export default function AdminOrdersPage() {
   const [filterStatus, setFilterStatus] = useState('')
 
   useEffect(() => {
-    if (token) {
-      adminApi.setToken(token)
-      fetchRestaurants()
-      fetchOrders()
-    }
-  }, [token])
+    fetchRestaurants()
+    fetchOrders()
+  }, [])
 
   const fetchRestaurants = async () => {
     try {
@@ -86,33 +85,33 @@ export default function AdminOrdersPage() {
       <header className="bg-white shadow-sm p-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">訂單總覽</h1>
-            <p className="text-sm text-gray-500">全系統訂單管理</p>
+            <h1 className="text-2xl font-bold text-gray-800">{t('admin.orders.title')}</h1>
+            <p className="text-sm text-gray-500">{t('admin.orders.subtitle')}</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => navigate('/admin/restaurants')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              餐廳管理
+              {t('nav.restaurants')}
             </button>
             <button
               onClick={() => navigate('/admin/locations')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              地點管理
+              {t('nav.locations')}
             </button>
             <button
               onClick={() => navigate('/admin/staff-requests')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              職員申請
+              {t('nav.staffRequests')}
             </button>
             <button
               onClick={logout}
               className="text-gray-500 hover:text-gray-700 text-sm"
             >
-              登出
+              {t('auth.logout')}
             </button>
           </div>
         </div>
@@ -129,7 +128,7 @@ export default function AdminOrdersPage() {
         <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">日期</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('admin.orders.filters.date')}</label>
               <input
                 type="date"
                 value={filterDate}
@@ -138,39 +137,39 @@ export default function AdminOrdersPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">餐廳</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('admin.orders.filters.restaurant')}</label>
               <select
                 value={filterRestaurant}
                 onChange={(e) => setFilterRestaurant(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg text-sm"
               >
-                <option value="">全部</option>
+                <option value="">{t('common.all')}</option>
                 {restaurants.map(r => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">狀態</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('admin.orders.filters.status')}</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg text-sm"
               >
-                <option value="">全部</option>
-                <option value="pending">待確認</option>
-                <option value="confirmed">已確認</option>
-                <option value="preparing">準備中</option>
-                <option value="arrived">已送達</option>
-                <option value="completed">已完成</option>
-                <option value="cancelled">已取消</option>
+                <option value="">{t('common.all')}</option>
+                <option value="pending">{t('order.statuses.pending')}</option>
+                <option value="confirmed">{t('order.statuses.confirmed')}</option>
+                <option value="preparing">{t('order.statuses.preparing')}</option>
+                <option value="arrived">{t('order.statuses.arrived')}</option>
+                <option value="completed">{t('order.statuses.completed')}</option>
+                <option value="cancelled">{t('order.statuses.cancelled')}</option>
               </select>
             </div>
             <button
               onClick={fetchOrders}
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition"
             >
-              搜尋
+              {t('common.search')}
             </button>
           </div>
         </div>
@@ -178,12 +177,12 @@ export default function AdminOrdersPage() {
         {/* Summary */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-white rounded-xl shadow-sm p-4">
-            <p className="text-sm text-gray-500">總訂單數</p>
+            <p className="text-sm text-gray-500">{t('admin.orders.totalOrders')}</p>
             <p className="text-2xl font-bold text-gray-800">{orders.length}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-4">
-            <p className="text-sm text-gray-500">總營業額</p>
-            <p className="text-2xl font-bold text-gray-800">${totalRevenue.toLocaleString()}</p>
+            <p className="text-sm text-gray-500">{t('admin.orders.totalRevenue')}</p>
+            <p className="text-2xl font-bold text-gray-800">{formatTwd(totalRevenue)}</p>
           </div>
         </div>
 
@@ -193,20 +192,20 @@ export default function AdminOrdersPage() {
           </div>
         ) : orders.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <p className="text-gray-500">查無訂單。</p>
+            <p className="text-gray-500">{t('admin.orders.noOrders')}</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">訂單編號</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">餐廳</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">公司</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">地點</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">取餐時間</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">金額</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">狀態</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.orders.table.orderNumber')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.orders.table.restaurant')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.orders.table.company')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.orders.table.pickupLocation')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.orders.table.pickupTime')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.orders.table.amount')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('common.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -217,10 +216,10 @@ export default function AdminOrdersPage() {
                     <td className="py-3 px-4 text-sm text-gray-600">{o.company_name}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{o.location_name}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{o.pickup_time}</td>
-                    <td className="py-3 px-4 text-sm font-medium text-gray-800">${o.total_amount}</td>
+                    <td className="py-3 px-4 text-sm font-medium text-gray-800">{formatTwd(o.total_amount)}</td>
                     <td className="py-3 px-4">
                       <span className={`text-xs font-medium px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || 'bg-gray-100 text-gray-800'}`}>
-                        {({'pending':'待確認','confirmed':'已確認','preparing':'準備中','arrived':'已送達','completed':'已完成','cancelled':'已取消'} as Record<string,string>)[o.status] || o.status}
+                        {t(`order.statuses.${o.status}`)}
                       </span>
                     </td>
                   </tr>

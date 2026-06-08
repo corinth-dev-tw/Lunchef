@@ -1,5 +1,7 @@
 import type { MiddlewareHandler } from 'hono';
 import type { Env } from '../index';
+import { parseSessionToken } from '../utils/crypto';
+import { t, getLocale } from '../i18n';
 
 interface LineProfile {
   userId: string;
@@ -19,9 +21,10 @@ export const lineAuthMiddleware: MiddlewareHandler<{
   Bindings: Env;
   Variables: { user: LineUser };
 }> = async (c, next) => {
+  const locale = getLocale(c);
   const authHeader = c.req.header('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized: Missing Authorization header' }, 401);
+    return c.json({ error: t('errors.missingAuthHeader', locale) }, 401);
   }
 
   const accessToken = authHeader.slice(7);
@@ -45,7 +48,7 @@ export const lineAuthMiddleware: MiddlewareHandler<{
   });
 
   if (!response.ok) {
-    return c.json({ error: 'Unauthorized: Invalid or expired LINE token' }, 401);
+    return c.json({ error: t('errors.invalidLineToken', locale) }, 401);
   }
 
   const profile = (await response.json()) as LineProfile;
@@ -66,26 +69,21 @@ export const dashboardAuthMiddleware: MiddlewareHandler<{
   Bindings: Env;
   Variables: { restaurantId: number };
 }> = async (c, next) => {
-  // Try cookie first, fall back to Authorization header
-  const cookie = c.req.header('Cookie') || '';
-  const cookieMatch = cookie.match(/dashboard_session=([^;]+)/);
-  let token = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
+  const locale = getLocale(c);
+  const token = parseSessionToken(
+    c.req.header('Cookie'),
+    'dashboard_session',
+    c.req.header('Authorization')
+  );
 
   if (!token) {
-    const authHeader = c.req.header('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.slice(7);
-    }
-  }
-
-  if (!token) {
-    return c.json({ error: 'Unauthorized: Missing session' }, 401);
+    return c.json({ error: t('errors.missingSession', locale) }, 401);
   }
 
   const sessionData = await c.env.CACHE.get(`dashboard_session:${token}`);
 
   if (!sessionData) {
-    return c.json({ error: 'Unauthorized: Invalid or expired session' }, 401);
+    return c.json({ error: t('errors.invalidSession', locale) }, 401);
   }
 
   try {
@@ -93,6 +91,6 @@ export const dashboardAuthMiddleware: MiddlewareHandler<{
     c.set('restaurantId', restaurantId);
     await next();
   } catch {
-    return c.json({ error: 'Unauthorized: Invalid session data' }, 401);
+    return c.json({ error: t('errors.invalidSessionData', locale) }, 401);
   }
 };

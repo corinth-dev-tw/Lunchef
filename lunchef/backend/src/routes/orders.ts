@@ -2,8 +2,9 @@ import { Hono } from 'hono';
 import type { Env } from '../index';
 import type { LineUser } from '../index';
 import { lineAuthMiddleware } from '../middleware/auth';
-import { sendLineMessage, createOrderNotificationFlex } from '../utils/line';
+import { broadcastLineMessage, createOrderNotificationFlex } from '../utils/line';
 import { CreateOrderSchema } from '../lib/validation';
+import { t, getLocale } from '../i18n';
 
 const app = new Hono<{
   Bindings: Env;
@@ -31,42 +32,21 @@ interface CreateOrderBody {
   tax_id?: string;
 }
 
-// Helper: get current date/time in Asia/Taipei
 function getTaipeiDateParts(): { dateStr: string; hours: number; minutes: number } {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Taipei',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(new Date());
-  const get = (type: string) => parts.find((p) => p.type === type)?.value || '0';
-
-  const year = get('year');
-  const month = get('month');
-  const day = get('day');
-  const hours = parseInt(get('hour'));
-  const minutes = parseInt(get('minute'));
-
+  const now = new Date();
+  const taipei = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+  const dateStr = taipei.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
   return {
-    dateStr: `${year}-${month}-${day}`,
-    hours,
-    minutes,
+    dateStr,
+    hours: taipei.getHours(),
+    minutes: taipei.getMinutes(),
   };
 }
 
-// Helper: generate unique order number using crypto RNG
 function generateOrderNumber(): string {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' }).replace(/-/g, '');
-  // Use crypto.getRandomValues for cryptographically secure randomness
-  const random = crypto.getRandomValues(new Uint32Array(1))[0]
-    .toString(36)
-    .toUpperCase()
+  const { dateStr } = getTaipeiDateParts();
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
     .padStart(4, '0')
     .slice(0, 4);
   return `LCE-${dateStr}-${random}`;
@@ -77,6 +57,7 @@ app.get('/', lineAuthMiddleware, async (c) => {
   const user = c.get('user');
   const companyId = c.req.query('company_id');
   const userId = c.req.query('user_id');
+  const locale = getLocale(c);
 
   // Verify the authenticated user matches the requested user_id or belongs to the company
   const authedUser = await c.env.DB.prepare(
@@ -84,7 +65,7 @@ app.get('/', lineAuthMiddleware, async (c) => {
   ).bind(user.lineUserId).first<{ id: number; company_id: number }>();
 
   if (!authedUser) {
-    return c.json({ error: 'User not found' }, 404);
+    return c.json({ error: t('errors.userNotFound', locale) }, 404);
   }
 
   let query = `
@@ -100,7 +81,7 @@ app.get('/', lineAuthMiddleware, async (c) => {
   if (companyId) {
     // Verify the authenticated user belongs to this company
     if (authedUser.company_id !== parseInt(companyId)) {
-      return c.json({ error: 'Forbidden: cannot access orders from other companies' }, 403);
+      return c.json({ error: t('errors.companyMismatch', locale) }, 403);
     }
     query += ' AND o.company_id = ?';
     params.push(companyId);
@@ -129,13 +110,14 @@ app.get('/', lineAuthMiddleware, async (c) => {
 app.get('/:id', lineAuthMiddleware, async (c) => {
   const id = c.req.param('id');
   const user = c.get('user');
+  const locale = getLocale(c);
 
   const authedUser = await c.env.DB.prepare(
     'SELECT company_id FROM users WHERE line_user_id = ? AND is_active = 1'
   ).bind(user.lineUserId).first<{ company_id: number }>();
 
   if (!authedUser) {
-    return c.json({ error: 'User not found' }, 404);
+    return c.json({ error: t('errors.userNotFound', locale) }, 404);
   }
 
   const order = await c.env.DB.prepare(`
@@ -152,11 +134,11 @@ app.get('/:id', lineAuthMiddleware, async (c) => {
     [key: string]: any;
   }>();
 
-  if (!order) return c.json({ error: 'Order not found' }, 404);
+  if (!order) return c.json({ error: t('errors.orderNotFound', locale) }, 404);
 
   // Authorization check
   if (order.company_id !== authedUser.company_id) {
-    return c.json({ error: 'Forbidden' }, 403);
+    return c.json({ error: t('errors.forbidden', locale) }, 403);
   }
 
   const { results: items } = await c.env.DB.prepare(`
@@ -173,10 +155,11 @@ app.get('/:id', lineAuthMiddleware, async (c) => {
 app.post('/', lineAuthMiddleware, async (c) => {
   try {
     const user = c.get('user');
+    const locale = getLocale(c);
     const body = await c.req.json();
     const parsed = CreateOrderSchema.safeParse(body);
     if (!parsed.success) {
-      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+      return c.json({ error: t('errors.invalidInput', locale), details: parsed.error.issues }, 400);
     }
     const {
       company_id,
@@ -197,11 +180,11 @@ app.post('/', lineAuthMiddleware, async (c) => {
     ).bind(user.lineUserId).first<{ id: number; company_id: number }>();
 
     if (!authedUser) {
-      return c.json({ error: 'User not found' }, 404);
+      return c.json({ error: t('errors.userNotFound', locale) }, 404);
     }
 
     if (authedUser.id !== user_id || authedUser.company_id !== company_id) {
-      return c.json({ error: 'Forbidden: user/company mismatch' }, 403);
+      return c.json({ error: t('errors.forbidden', locale) }, 403);
     }
 
     // Get restaurant info
@@ -216,7 +199,7 @@ app.post('/', lineAuthMiddleware, async (c) => {
     }>();
 
     if (!restaurant) {
-      return c.json({ error: 'Restaurant not found' }, 404);
+      return c.json({ error: t('errors.restaurantNotFound', locale) }, 404);
     }
 
     // Check cutoff time (timezone-aware, Asia/Taipei)
@@ -227,7 +210,7 @@ app.post('/', lineAuthMiddleware, async (c) => {
       const cutoffMinutes = cutoffHour * 60 + cutoffMinute;
 
       if (currentMinutes >= cutoffMinutes) {
-        return c.json({ error: `Order cutoff time (${restaurant.order_cutoff_time}) has passed` }, 400);
+        return c.json({ error: t('errors.cutoffPassed', locale, { time: restaurant.order_cutoff_time }) }, 400);
       }
     }
 
@@ -247,11 +230,11 @@ app.post('/', lineAuthMiddleware, async (c) => {
       ).bind(item.menu_item_id, restaurant_id).first<{ id: number; price: number; available: number }>();
 
       if (!menuItem) {
-        return c.json({ error: `Menu item ${item.menu_item_id} not found` }, 400);
+        return c.json({ error: t('errors.menuItemNotFound', locale, { id: item.menu_item_id }) }, 400);
       }
 
       if (!menuItem.available) {
-        return c.json({ error: `Menu item ${item.menu_item_id} is not available` }, 400);
+        return c.json({ error: t('errors.menuItemUnavailable', locale, { id: item.menu_item_id }) }, 400);
       }
 
       totalAmount += menuItem.price * item.quantity;
@@ -293,7 +276,7 @@ app.post('/', lineAuthMiddleware, async (c) => {
     }
 
     if (attempts >= maxAttempts) {
-      return c.json({ error: 'Failed to generate unique order number' }, 500);
+      return c.json({ error: t('errors.orderNumberGenerationFailed', locale) }, 500);
     }
 
     // Create order first, then items (reliable last_row_id retrieval)
@@ -306,7 +289,7 @@ app.post('/', lineAuthMiddleware, async (c) => {
 
     if (!orderId) {
       console.error('Order insert failed: no last_row_id', { orderResult });
-      return c.json({ error: 'Failed to create order: could not retrieve order ID' }, 500);
+      return c.json({ error: t('errors.orderCreationFailed', locale) }, 500);
     }
 
     // Insert order items
@@ -320,24 +303,37 @@ app.post('/', lineAuthMiddleware, async (c) => {
       await c.env.DB.batch(itemStmts);
     }
 
-    // Send LINE Bot notification to restaurant
+    // Send LINE notification to all active restaurant staff
     try {
-      const company = await c.env.DB.prepare(
-        'SELECT name FROM companies WHERE id = ?'
-      ).bind(company_id).first<{ name: string }>();
+      // Get orderer's display name
+      const orderer = await c.env.DB.prepare(
+        'SELECT name FROM users WHERE id = ?'
+      ).bind(user_id).first<{ name: string }>();
 
-      const notificationMessage = createOrderNotificationFlex(
+      const notificationMessage = createOrderNotificationFlex({
         orderNumber,
-        company_name || company?.name || 'Unknown',
+        companyName: company_name || '',
+        orderedBy: orderer?.name || '',
         totalAmount,
-        pickup_time,
-        totalItems
-      );
+        pickupTime: pickup_time,
+        itemCount: totalItems,
+        paymentMethod: payment_method || 'cash',
+      });
 
-      // For demo, send to configured admin; in production this should go to restaurant's LINE ID
-      const adminLineId = await c.env.CACHE.get('admin_line_id');
-      if (adminLineId) {
-        await sendLineMessage(c.env, adminLineId, [notificationMessage]);
+      // Fetch all active staff for this restaurant
+      const { results: staffList } = await c.env.DB.prepare(
+        'SELECT line_user_id FROM restaurant_staff WHERE restaurant_id = ? AND is_active = 1'
+      ).bind(restaurant_id).all<{ line_user_id: string }>();
+
+      let recipientIds = staffList.map((s) => s.line_user_id).filter(Boolean);
+
+      // Fallback: if no staff configured, notify the admin directly
+      if (recipientIds.length === 0 && c.env.ADMIN_LINE_USER_ID) {
+        recipientIds = [c.env.ADMIN_LINE_USER_ID];
+      }
+
+      if (recipientIds.length > 0) {
+        await broadcastLineMessage(c.env, recipientIds, [notificationMessage]);
       }
     } catch (notifyError) {
       console.error('Failed to send notification:', notifyError);
@@ -354,8 +350,7 @@ app.post('/', lineAuthMiddleware, async (c) => {
     }, 201);
   } catch (error: any) {
     console.error('Create order error:', error);
-    const message = error?.message || String(error);
-    return c.json({ error: 'Failed to create order', detail: message }, 500);
+    return c.json({ error: t('errors.orderCreationFailed', getLocale(c)) }, 500);
   }
 });
 

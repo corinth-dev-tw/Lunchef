@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../contexts/AdminAuthContext'
+import { useTranslation } from '../i18n'
 import { adminApi } from '../utils/adminApi'
 
 interface Location {
@@ -11,7 +12,8 @@ interface Location {
 
 export default function AdminLocationsPage() {
   const navigate = useNavigate()
-  const { token, logout } = useAdminAuth()
+  const { t } = useTranslation()
+  const { logout } = useAdminAuth()
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -22,11 +24,8 @@ export default function AdminLocationsPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (token) {
-      adminApi.setToken(token)
-      fetchLocations()
-    }
-  }, [token])
+    fetchLocations()
+  }, [])
 
   const fetchLocations = async () => {
     try {
@@ -79,7 +78,7 @@ export default function AdminLocationsPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('確定要刪除此地點嗎？')) return
+    if (!confirm(t('admin.locations.confirmDelete'))) return
     try {
       await adminApi.delete(`/api/admin/locations/${id}`)
       fetchLocations()
@@ -93,39 +92,39 @@ export default function AdminLocationsPage() {
       <header className="bg-white shadow-sm p-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">地點管理</h1>
-            <p className="text-sm text-gray-500">管理辦公大樓地點</p>
+            <h1 className="text-2xl font-bold text-gray-800">{t('admin.locations.title')}</h1>
+            <p className="text-sm text-gray-500">{t('admin.locations.subtitle')}</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => navigate('/admin/restaurants')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              餐廳管理
+              {t('nav.restaurants')}
             </button>
             <button
               onClick={() => navigate('/admin/orders')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              訂單總覽
+              {t('nav.orders')}
             </button>
             <button
               onClick={() => navigate('/admin/staff-requests')}
               className="text-gray-600 hover:text-gray-800 text-sm font-medium"
             >
-              職員申請
+              {t('nav.staffRequests')}
             </button>
             <button
               onClick={startAdd}
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition"
             >
-              + 新增地點
+              + {t('admin.locations.addLocation')}
             </button>
             <button
               onClick={logout}
               className="text-gray-500 hover:text-gray-700 text-sm"
             >
-              登出
+              {t('auth.logout')}
             </button>
           </div>
         </div>
@@ -141,19 +140,19 @@ export default function AdminLocationsPage() {
         {editingId !== null && (
           <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              {editingId === -1 ? '新增地點' : '編輯地點'}
+              {editingId === -1 ? t('admin.locations.form.add') : t('admin.locations.form.edit')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <input
                 type="text"
-                placeholder="地點名稱"
+                placeholder={t('admin.locations.form.namePlaceholder')}
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg text-sm"
               />
               <input
                 type="text"
-                placeholder="地址"
+                placeholder={t('admin.locations.form.addressPlaceholder')}
                 value={formAddress}
                 onChange={(e) => setFormAddress(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg text-sm"
@@ -165,13 +164,13 @@ export default function AdminLocationsPage() {
                 disabled={saving || !formName.trim()}
                 className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-4 rounded transition disabled:opacity-50"
               >
-                {saving ? '儲存中...' : '儲存'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
               <button
                 onClick={cancelEdit}
                 className="text-gray-500 text-sm font-medium py-2 px-4"
               >
-                取消
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -183,16 +182,16 @@ export default function AdminLocationsPage() {
           </div>
         ) : locations.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <p className="text-gray-500">尚無地點。</p>
+            <p className="text-gray-500">{t('admin.locations.noLocations')}</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">名稱</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">地址</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">操作</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('common.name')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('admin.locations.address')}</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -206,13 +205,13 @@ export default function AdminLocationsPage() {
                           onClick={() => startEdit(loc)}
                           className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                         >
-                          編輯
+                          {t('common.edit')}
                         </button>
                         <button
                           onClick={() => handleDelete(loc.id)}
                           className="text-sm text-red-600 hover:text-red-800 font-medium"
                         >
-                          刪除
+                          {t('common.delete')}
                         </button>
                       </div>
                     </td>
