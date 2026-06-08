@@ -18,6 +18,7 @@ export interface Env {
   LINE_CHANNEL_ACCESS_TOKEN: string;
   LINE_CHANNEL_SECRET: string;
   ADMIN_PASSWORD: string;
+  ADMIN_LINE_USER_ID: string;
   ENVIRONMENT: string;
 }
 
@@ -66,6 +67,7 @@ app.use('*', logger());
 app.use('/api/*', rateLimitMiddleware({ max: 100, window: 60 }));
 // Stricter limits for sensitive endpoints
 app.use('/api/admin/login', rateLimitMiddleware({ max: 5, window: 300 }));
+app.use('/api/admin/line-login', rateLimitMiddleware({ max: 10, window: 300 }));
 app.use('/api/dashboard/line-login', rateLimitMiddleware({ max: 10, window: 300 }));
 app.use('/api/staff/register', rateLimitMiddleware({ max: 10, window: 3600 }));
 app.use('/api/orders', rateLimitMiddleware({ max: 30, window: 60 }));

@@ -1,44 +1,80 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../contexts/AdminAuthContext'
 import { useTranslation } from '../i18n'
-import { Shield, ArrowLeft } from 'lucide-react'
+import { Shield } from 'lucide-react'
+import liff from '@line/liff'
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { login } = useAdminAuth()
-  const [password, setPassword] = useState('')
+  const { isAdmin, login } = useAdminAuth()
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [liffReady, setLiffReady] = useState(false)
+  const [loggingIn, setLoggingIn] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!password.trim()) return
+  useEffect(() => {
+    if (isAdmin) {
+      navigate('/admin/restaurants')
+      return
+    }
 
-    setLoading(true)
+    const liffId = import.meta.env.VITE_DASHBOARD_LIFF_ID || import.meta.env.VITE_LIFF_ID || '2010266926-wB4JsxVI'
+    liff.init({ liffId, withLoginOnExternalBrowser: true })
+      .then(() => {
+        setLiffReady(true)
+        if (liff.isLoggedIn()) {
+          handleLiffLogin()
+        }
+      })
+      .catch((err) => {
+        console.error('LIFF init failed:', err)
+        setError(t('errors.generic'))
+      })
+  }, [isAdmin])
+
+  const handleLiffLogin = async () => {
+    if (!liff.isLoggedIn()) return
+    setLoggingIn(true)
     setError('')
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-        credentials: 'include',
-      })
+      const accessToken = liff.getAccessToken()
+      if (!accessToken) throw new Error(t('errors.generic'))
 
-      const data = await res.json()
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8787'}/api/admin/line-login`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_token: accessToken }),
+          credentials: 'include',
+        }
+      )
+
+      const data = await res.json() as { success?: boolean; token?: string; error?: string; name?: string }
       if (!res.ok) {
         throw new Error(data.error || t('errors.unauthorized'))
       }
 
-      login()
+      login(data.token)
       navigate('/admin/restaurants')
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t('errors.generic')
+      setError(msg)
+      liff.logout()
     } finally {
-      setLoading(false)
+      setLoggingIn(false)
     }
+  }
+
+  const handleLineLoginClick = async () => {
+    if (!liffReady) return
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: window.location.href })
+      return
+    }
+    await handleLiffLogin()
   }
 
   return (
@@ -52,39 +88,31 @@ export default function AdminLoginPage() {
           <p className="text-gray-500 mt-1">{t('login.subtitle')}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth.adminPassword')}</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t('auth.enterPassword')}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
-            />
-          </div>
-
-          {error && (
-            <div className="bg-red-100 border border-red-300 rounded-lg p-3">
-              <p className="text-red-700 text-sm">{error}</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition disabled:opacity-50"
-          >
-            {loading ? t('auth.loggingIn') : t('auth.login')}
-          </button>
-        </form>
-
         <button
-          onClick={() => navigate('/')}
-          className="w-full mt-4 text-gray-500 text-sm hover:text-gray-700 flex items-center justify-center gap-1"
+          onClick={handleLineLoginClick}
+          disabled={!liffReady || loggingIn}
+          className="w-full flex items-center justify-center gap-2 bg-[#06C755] hover:bg-[#05b34d] text-white font-bold py-3 px-4 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ArrowLeft className="w-3 h-3" /> {t('login.backToRestaurantLogin')}
+          {loggingIn ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {t('auth.loggingIn')}
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21.5 11.5c0-4.15-4.47-7.5-10-7.5S1.5 7.35 1.5 11.5c0 3.72 3.33 6.83 7.82 7.42.3.06.8.19.92.44.1.2.07.52.03.73l-.13.77c-.04.22-.18.87.76.47.93-.4 5.02-2.96 7.11-5.06a9.23 9.23 0 001.49-1.87c.65-1.1.99-2.15.99-2.96z"/>
+              </svg>
+              {t('auth.loginWithLine')}
+            </>
+          )}
         </button>
+
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-red-600 text-sm text-center">{error}</p>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -17,8 +17,9 @@ const app = new Hono<{ Bindings: Env }>();
 
 // Admin auth middleware
 app.use('*', async (c, next) => {
-  // Skip auth for login endpoint
-  if ((c.req.path === '/login' || c.req.path === '/api/admin/login') && c.req.method === 'POST') {
+  // Skip auth for login endpoints
+  const skipPaths = ['/login', '/api/admin/login', '/line-login', '/api/admin/line-login'];
+  if (skipPaths.includes(c.req.path) && c.req.method === 'POST') {
     return next();
   }
 
@@ -86,6 +87,53 @@ app.post('/login', async (c) => {
     return c.json({ success: true, token });
   } catch (error) {
     console.error('Admin login error:', error);
+    return c.json({ error: 'Login failed' }, 500);
+  }
+});
+
+// POST /api/admin/line-login — verify LINE token and check admin LINE user ID
+app.post('/line-login', async (c) => {
+  try {
+    const body = await c.req.json();
+    const accessToken = body.access_token as string | undefined;
+    if (!accessToken) {
+      return c.json({ error: 'access_token required' }, 400);
+    }
+
+    // Verify token with LINE
+    const profileRes = await fetch('https://api.line.me/v2/profile', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!profileRes.ok) {
+      return c.json({ error: 'Invalid LINE token' }, 401);
+    }
+    const profile = await profileRes.json() as { userId: string; displayName: string };
+
+    // Check if this LINE user is the designated admin
+    const adminLineUserId = c.env.ADMIN_LINE_USER_ID;
+    if (!adminLineUserId) {
+      return c.json({ error: 'Admin not configured' }, 500);
+    }
+    if (profile.userId !== adminLineUserId) {
+      return c.json({ error: 'Not authorised as admin' }, 403);
+    }
+
+    // Create session
+    const token = crypto.randomUUID();
+    await c.env.CACHE.put(
+      `admin_session:${token}`,
+      JSON.stringify({ role: 'admin', lineUserId: profile.userId, name: profile.displayName }),
+      { expirationTtl: 28800 }
+    );
+
+    const isProduction = c.env.ENVIRONMENT === 'production';
+    c.header('Set-Cookie',
+      `admin_session=${token}; HttpOnly; Secure; SameSite=None; Max-Age=28800; Path=/; ${isProduction ? 'Domain=.lunchef.antu-technology.com;' : ''}`
+    );
+
+    return c.json({ success: true, token, name: profile.displayName });
+  } catch (error) {
+    console.error('Admin LINE login error:', error);
     return c.json({ error: 'Login failed' }, 500);
   }
 });

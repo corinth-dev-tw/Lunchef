@@ -3,8 +3,10 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8787'
 class AdminApiClient {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE}${endpoint}`
+    const stored = localStorage.getItem('admin_token')
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      ...(stored ? { Authorization: `Bearer ${stored}` } : {}),
       ...(options.headers as Record<string, string> || {}),
     }
 
