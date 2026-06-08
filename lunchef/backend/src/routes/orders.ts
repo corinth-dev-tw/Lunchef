@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { Env } from '../index';
 import type { LineUser } from '../index';
 import { lineAuthMiddleware } from '../middleware/auth';
-import { sendLineMessage, createOrderNotificationFlex } from '../utils/line';
+import { broadcastLineMessage, createOrderNotificationFlex } from '../utils/line';
 import { CreateOrderSchema } from '../lib/validation';
 import { t, getLocale } from '../i18n';
 
@@ -303,24 +303,37 @@ app.post('/', lineAuthMiddleware, async (c) => {
       await c.env.DB.batch(itemStmts);
     }
 
-    // Send LINE Bot notification to restaurant
+    // Send LINE notification to all active restaurant staff
     try {
-      const company = await c.env.DB.prepare(
-        'SELECT name FROM companies WHERE id = ?'
-      ).bind(company_id).first<{ name: string }>();
+      // Get orderer's display name
+      const orderer = await c.env.DB.prepare(
+        'SELECT name FROM users WHERE id = ?'
+      ).bind(user_id).first<{ name: string }>();
 
-      const notificationMessage = createOrderNotificationFlex(
+      const notificationMessage = createOrderNotificationFlex({
         orderNumber,
-        company_name || company?.name || t('errors.notFound', 'zh-TW'),
+        companyName: company_name || '',
+        orderedBy: orderer?.name || '',
         totalAmount,
-        pickup_time,
-        totalItems
-      );
+        pickupTime: pickup_time,
+        itemCount: totalItems,
+        paymentMethod: payment_method || 'cash',
+      });
 
-      // For demo, send to configured admin; in production this should go to restaurant's LINE ID
-      const adminLineId = await c.env.CACHE.get('admin_line_id');
-      if (adminLineId) {
-        await sendLineMessage(c.env, adminLineId, [notificationMessage]);
+      // Fetch all active staff for this restaurant
+      const { results: staffList } = await c.env.DB.prepare(
+        'SELECT line_user_id FROM restaurant_staff WHERE restaurant_id = ? AND is_active = 1'
+      ).bind(restaurant_id).all<{ line_user_id: string }>();
+
+      let recipientIds = staffList.map((s) => s.line_user_id).filter(Boolean);
+
+      // Fallback: if no staff configured, notify the admin directly
+      if (recipientIds.length === 0 && c.env.ADMIN_LINE_USER_ID) {
+        recipientIds = [c.env.ADMIN_LINE_USER_ID];
+      }
+
+      if (recipientIds.length > 0) {
+        await broadcastLineMessage(c.env, recipientIds, [notificationMessage]);
       }
     } catch (notifyError) {
       console.error('Failed to send notification:', notifyError);

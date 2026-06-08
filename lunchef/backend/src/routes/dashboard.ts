@@ -193,26 +193,29 @@ app.put('/orders/:id/status', async (c) => {
       return c.json({ error: t('errors.orderNotFound', locale) }, 404);
     }
 
-    // Send LINE Bot notification to customer on status update
+    // Send LINE notification to customer on status update
     try {
       const order = await c.env.DB.prepare(`
-        SELECT o.order_number, r.name as restaurant_name, u.line_user_id
+        SELECT o.order_number, o.pickup_time, r.name as restaurant_name, u.line_user_id
         FROM orders o
         JOIN restaurants r ON o.restaurant_id = r.id
         JOIN users u ON o.user_id = u.id
         WHERE o.id = ?
       `).bind(id).first<{
         order_number: string;
+        pickup_time: string;
         line_user_id: string;
         restaurant_name: string;
       }>();
 
       if (order?.line_user_id) {
-        const statusMessage = createStatusUpdateFlex(
-          order.order_number,
+        const statusMessage = createStatusUpdateFlex({
+          orderNumber: order.order_number,
           status,
-          order.restaurant_name
-        );
+          restaurantName: order.restaurant_name,
+          pickupTime: order.pickup_time,
+          cancellationReason: cancellation_reason ?? undefined,
+        });
         await sendLineMessage(c.env, order.line_user_id, [statusMessage]);
       }
     } catch (notifyError) {

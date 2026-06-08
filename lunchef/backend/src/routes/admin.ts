@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from '../index';
+import { sendLineMessage, createStaffApprovalFlex } from '../utils/line';
 import {
   CreateRestaurantSchema,
   UpdateRestaurantSchema,
@@ -117,6 +118,9 @@ app.post('/line-login', async (c) => {
     if (profile.userId !== adminLineUserId) {
       return c.json({ error: 'Not authorised as admin' }, 403);
     }
+
+    // Persist admin LINE user ID so order notifications can reach the admin
+    await c.env.CACHE.put('admin_line_id', profile.userId);
 
     // Create session
     const token = crypto.randomUUID();
@@ -674,6 +678,25 @@ app.post('/staff-requests/:id/approve', async (c) => {
       'UPDATE staff_requests SET status = ?, restaurant_id = ?, role = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind('approved', restaurant_id, role || 'staff', id).run();
 
+    // Notify the staff member via LINE
+    try {
+      const restaurant = await c.env.DB.prepare(
+        'SELECT name FROM restaurants WHERE id = ?'
+      ).bind(restaurant_id).first<{ name: string }>();
+
+      const dashboardUrl = 'https://dashboard.lunchef.antu-technology.com/';
+      const msg = createStaffApprovalFlex({
+        staffName: request.name,
+        approved: true,
+        restaurantName: restaurant?.name,
+        role: role || 'staff',
+        dashboardUrl,
+      });
+      await sendLineMessage(c.env, request.line_user_id, [msg]);
+    } catch (notifyError) {
+      console.error('Failed to send staff approval notification:', notifyError);
+    }
+
     return c.json({ success: true });
   } catch (error) {
     console.error('Approve staff request error:', error);
@@ -685,9 +708,26 @@ app.post('/staff-requests/:id/approve', async (c) => {
 app.post('/staff-requests/:id/reject', async (c) => {
   try {
     const id = c.req.param('id');
+
+    // Get the staff member's info before updating, to send notification
+    const request = await c.env.DB.prepare(
+      'SELECT line_user_id, name FROM staff_requests WHERE id = ?'
+    ).bind(id).first<{ line_user_id: string; name: string }>();
+
     await c.env.DB.prepare(
       'UPDATE staff_requests SET status = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind('rejected', id).run();
+
+    // Notify the staff member via LINE
+    if (request?.line_user_id) {
+      try {
+        const msg = createStaffApprovalFlex({ staffName: request.name, approved: false });
+        await sendLineMessage(c.env, request.line_user_id, [msg]);
+      } catch (notifyError) {
+        console.error('Failed to send staff rejection notification:', notifyError);
+      }
+    }
+
     return c.json({ success: true });
   } catch (error) {
     console.error('Reject staff request error:', error);
